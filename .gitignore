@@ -1,0 +1,9 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+blob-report/
+lighthouse/reports/*.tmp
+.env
+.env.local
+.env.*.local
