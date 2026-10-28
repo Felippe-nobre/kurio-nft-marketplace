@@ -1,16 +1,21 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Outlet, useRouterState } from '@tanstack/react-router'
 import { Header } from '@/components/layout/Header'
+import { MobileNav } from '@/components/layout/MobileNav'
+import { SearchDialog } from '@/components/SearchDialog'
 import { Footer } from '@/components/layout/Footer'
 import { Toaster } from '@/components/ui/sonner'
 import { LiveAnnouncer } from '@/lib/announcer'
 import { SessionWatcher } from './SessionWatcher'
+import { cn } from '@/lib/utils'
 
 const DevPanel = lazy(() => import('@/components/DevPanel'))
 
 export function RootLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const [showDev, setShowDev] = useState(false)
+  // Figma mobile: a barra de navegação inferior aparece no Início.
+  const showMobileNav = pathname === '/'
 
   useEffect(() => {
     const flag = new URLSearchParams(window.location.search).get('dev')
@@ -30,7 +35,7 @@ export function RootLayout() {
   }, [pathname])
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className={cn('flex min-h-dvh flex-col', showMobileNav && 'max-md:pb-24')}>
       <a href="#conteudo" className="sr-only z-[60] bg-brand px-4 py-2 font-bold text-primary-foreground focus:not-sr-only focus:fixed focus:left-4 focus:top-4">
         Pular para o conteúdo
       </a>
@@ -39,6 +44,8 @@ export function RootLayout() {
         <Outlet />
       </main>
       <Footer />
+      {showMobileNav && <MobileNav />}
+      <SearchDialog />
       <Toaster />
       <LiveAnnouncer />
       <SessionWatcher />

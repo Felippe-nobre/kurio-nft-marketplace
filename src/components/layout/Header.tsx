@@ -1,10 +1,8 @@
-import { useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { LogIn, LogOut, Menu, Search, ShoppingCart, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetTitle, SheetClose, SheetTrigger } from '@/components/ui/sheet'
-import { Input } from '@/components/ui/input'
+import { openSearch } from '@/components/SearchDialog'
 import { useSession } from '@/lib/session'
 import { useCart } from '@/hooks/useCart'
 import { useLogout } from '@/hooks/useAuth'
@@ -18,26 +16,25 @@ const NAV = [
   { label: 'Aprenda', to: '/', hash: 'aprenda', match: () => false },
 ] as const
 
+/** Rotas com tela mobile própria no Figma (sem o cabeçalho do site). */
+export const MOBILE_CHROMELESS = /^\/($|nft\/|cart$|checkout$|login$|cadastro$)/
+
 export function Header() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const { isAuthenticated, user } = useSession()
   const cart = useCart()
   const logout = useLogout()
   const navigate = useNavigate()
-  const [searchOpen, setSearchOpen] = useState(false)
-  const searchTriggerRef = useRef<HTMLButtonElement>(null)
   const rt = useRealtimeStatus()
   const count = cart.data?.count ?? 0
 
-  const submitSearch = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const q = String(new FormData(e.currentTarget).get('q') ?? '').trim()
-    setSearchOpen(false)
-    void navigate({ to: '/', search: { q: q || undefined }, hash: 'catalogo' })
-  }
+  // Figma mobile: nestas telas o cabeçalho do site dá lugar à barra inferior
+  // (Início) ou à barra com botão de voltar (Detalhes, Carrinho, Pagamento),
+  // e Login/Cadastro são telas cheias.
+  const hideOnMobile = MOBILE_CHROMELESS.test(pathname)
 
   return (
-    <header className="container-kurio">
+    <header className={cn('container-kurio', hideOnMobile && 'max-md:hidden')}>
       <div className="flex h-[68px] items-center gap-4 border-b border-line">
         <Sheet>
           <SheetTrigger asChild>
@@ -107,7 +104,7 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <Button ref={searchTriggerRef} variant="ghost" size="icon" aria-label="Buscar NFTs" onClick={() => setSearchOpen(true)}>
+          <Button variant="ghost" size="icon" aria-label="Buscar NFTs" onClick={(e) => openSearch(e.currentTarget)}>
             <Search className="!size-6" aria-hidden="true" />
           </Button>
           <Link to="/cart" className="relative flex size-10 items-center justify-center" aria-label={`Carrinho, ${count} ${count === 1 ? 'item' : 'itens'}`} data-testid="cart-link">
@@ -146,26 +143,6 @@ export function Header() {
         </div>
       </div>
 
-      <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-        <DialogContent
-          className="top-24 translate-y-0"
-          // Sem DialogTrigger o Radix não sabe para onde devolver o foco: devolve ao botão de busca.
-          onCloseAutoFocus={(e) => {
-            e.preventDefault()
-            searchTriggerRef.current?.focus()
-          }}
-        >
-          <DialogTitle>Buscar NFTs</DialogTitle>
-          <DialogDescription className="mb-4">Busque por nome, criador ou coleção.</DialogDescription>
-          <form onSubmit={submitSearch} role="search" className="flex gap-2">
-            <label htmlFor="header-search" className="sr-only">
-              Termo de busca
-            </label>
-            <Input id="header-search" name="q" type="search" placeholder="Ex.: Emerald Ape" autoFocus />
-            <Button type="submit">Buscar</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
     </header>
   )
 }

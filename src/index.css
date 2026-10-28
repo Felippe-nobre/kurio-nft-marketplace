@@ -68,7 +68,7 @@
   }
   .field-input::placeholder { color: color-mix(in srgb, var(--color-muted) 75%, transparent); }
   .field-input[aria-invalid="true"] { border-color: var(--color-danger); }
-  .container-kurio { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 1rem; }
+  .container-kurio { width: 100%; max-width: 1200px; margin-inline: auto; padding-inline: 1.5rem; } /* Figma mobile: margem de 24px */
   @media (min-width: 768px) { .container-kurio { padding-inline: 1.5rem; } }
   @media (min-width: 1280px) { .container-kurio { padding-inline: 0; } }
 }

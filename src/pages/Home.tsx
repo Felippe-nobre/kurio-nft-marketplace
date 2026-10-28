@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from 'react'
 import { Link, useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowRight, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react'
+import { ArrowRight, ChevronLeft, ChevronRight, Search, Settings2, SlidersHorizontal, X } from 'lucide-react'
 import type { CatalogPage, CatalogSort, CatalogTab, Category, Network } from '@/api/contracts'
 import { CATEGORIES, NETWORKS } from '@/api/contracts'
 import { useCatalog, useHighlights } from '@/hooks/useCatalog'
@@ -9,7 +9,7 @@ import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
-import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { toCatalogQuery, type HomeSearch } from '@/app/routes'
 import { cn, fetchPriority } from '@/lib/utils'
@@ -28,6 +28,9 @@ const SORT_LABEL: Record<CatalogSort, string> = {
   price_desc: 'Maior preço',
   name: 'Nome (A–Z)',
 }
+/** Figma mobile: grade de 2 colunas escalonada (coluna direita 32px abaixo). */
+const MOBILE_GRID = 'max-md:-mt-1 max-md:gap-y-5 max-md:pb-8 max-md:[&>li:nth-child(even)]:translate-y-8'
+
 const TABS: { id: CatalogTab; label: string }[] = [
   { id: 'all', label: 'Todos os NFTs' },
   { id: 'new', label: 'Novos lançamentos' },
@@ -35,10 +38,20 @@ const TABS: { id: CatalogTab; label: string }[] = [
 ]
 
 export function HomePage() {
+  // O painel de filtros é aberto pelo botão "Filtros" do catálogo (tablet) ou
+  // pelo botão ao lado da busca no topo (Figma mobile).
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const filtersTrigger = useRef<HTMLElement | null>(null)
+  const openFilters = (el: HTMLElement) => {
+    filtersTrigger.current = el
+    setFiltersOpen(true)
+  }
   return (
     <>
+      <MobileSearchBar onOpenFilters={openFilters} />
+      <MobileHero />
       <Hero />
-      <Catalog />
+      <Catalog filtersOpen={filtersOpen} onFiltersOpenChange={setFiltersOpen} onOpenFilters={openFilters} filtersTrigger={filtersTrigger} />
       <Promos />
       <Journal />
     </>
@@ -56,7 +69,7 @@ function Hero() {
   const image = current?.image ?? '/img/art/emerald-ape.webp'
 
   return (
-    <section aria-labelledby="hero-title" className="container-kurio grid items-center gap-10 py-10 md:grid-cols-[1fr_minmax(0,450px)] md:py-8">
+    <section aria-labelledby="hero-title" className="container-kurio grid items-center gap-10 py-10 max-md:hidden md:grid-cols-[1fr_minmax(0,450px)] md:py-8">
       <div className="md:pl-10">
         <p className="text-sm tracking-[0.12em]">Bem-vindo à Kurio</p>
         <h1 id="hero-title" className="mt-5 text-[clamp(2rem,6vw,2.75rem)] font-bold uppercase leading-[1.55] tracking-[0.04em]">
@@ -99,6 +112,111 @@ function Hero() {
   )
 }
 
+
+/* ------------------------- Topo mobile (Figma mobile) ------------------------ */
+
+/** Termo de busca com debounce, sincronizado com `?q=` (substitui a entrada do histórico enquanto digita). */
+function useSearchTerm() {
+  const { search, update } = useHomeSearch()
+  const [term, setTerm] = useState(search.q ?? '')
+  useEffect(() => setTerm(search.q ?? ''), [search.q])
+  useEffect(() => {
+    if ((search.q ?? '') === term.trim()) return
+    const t = setTimeout(() => void update({ q: term.trim() || undefined }, { replace: true }), 300)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [term])
+  return [term, setTerm] as const
+}
+
+const activeFilterCount = (s: HomeSearch) =>
+  (s.cat?.split(',').filter(Boolean).length ?? 0) + (s.net?.split(',').filter(Boolean).length ?? 0) + (s.min || s.max ? 1 : 0) + (s.q ? 1 : 0)
+
+function MobileSearchBar({ onOpenFilters }: { onOpenFilters: (el: HTMLElement) => void }) {
+  const { search } = useHomeSearch()
+  const [term, setTerm] = useSearchTerm()
+  const n = activeFilterCount(search)
+  return (
+    <div className="container-kurio flex gap-2 pt-10 md:hidden">
+      <div className="relative min-w-0 flex-1" role="search">
+        <label htmlFor="mobile-search" className="sr-only">
+          Buscar NFTs
+        </label>
+        <Search className="pointer-events-none absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-muted" aria-hidden="true" />
+        <input
+          id="mobile-search"
+          type="search"
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Explorar coleções"
+          className="h-11 w-full rounded-[10px] bg-surface pl-11 pr-3 text-sm text-text placeholder:font-bold placeholder:text-muted focus-visible:outline-2 focus-visible:outline-brand-strong"
+        />
+      </div>
+      <button
+        type="button"
+        aria-label={`Filtros${n ? ` (${n})` : ''}`}
+        onClick={(e) => onOpenFilters(e.currentTarget)}
+        className="relative flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-brand to-[#a8683b] text-bg"
+      >
+        <Settings2 className="size-5" aria-hidden="true" />
+        {n > 0 && <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-text text-[10px] font-bold text-bg" aria-hidden="true">{n}</span>}
+      </button>
+    </div>
+  )
+}
+
+/** Hero compacto do Figma mobile: card arredondado com texto à esquerda e arte à direita. */
+function MobileHero() {
+  const { data } = useHighlights()
+  const [slide, setSlide] = useState(0)
+  const slides = data?.hero ?? []
+  const current = slides[slide]
+  const image = current?.image ?? '/img/art/emerald-ape.webp'
+  const thumb = slides[(slide + 1) % Math.max(slides.length, 1)]?.image ?? '/img/art/sage-nomad.webp'
+  return (
+    <section aria-labelledby="hero-title-mobile" className="container-kurio mt-4 md:hidden">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#6a4529] via-[#523520] to-[#3a2516] px-4 pb-7 pt-2.5">
+        <span className="pointer-events-none absolute -left-16 top-8 size-60 rounded-full bg-[#7a5232]/40" aria-hidden="true" />
+        <div className="relative grid grid-cols-[minmax(0,1fr)_138px] gap-2">
+          <div className="min-w-0">
+            <p className="text-xs font-bold">Bem-vindo à Kurio</p>
+            <h1 id="hero-title-mobile" className="mt-1.5 text-lg font-bold uppercase leading-[29px]">
+              Seja dono da cultura digital
+            </h1>
+            <p className="mt-1.5 text-xs leading-[18px] text-muted">Descubra NFTs selecionados de criadores do mundo todo.</p>
+            <Link to="/" hash="catalogo" className="inline-flex items-center gap-2 text-xs font-bold uppercase leading-4 text-brand-strong">
+              Explorar <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+          </div>
+          <figure className="relative">
+            {current ? (
+              <Link to="/nft/$id" params={{ id: current.id }} aria-label={`Ver ${current.name}`}>
+                <img src={image} alt={current.name} width={138} height={138} className="aspect-square w-full rounded-xl object-cover" {...fetchPriority(true)} />
+              </Link>
+            ) : (
+              <img src={image} alt="Emerald Ape #042, NFT em destaque" width={138} height={138} className="aspect-square w-full rounded-xl object-cover" {...fetchPriority(true)} />
+            )}
+            <img src={thumb} alt="" width={58} height={58} className="absolute -bottom-2 left-3 size-[58px] rounded-[10px] object-cover ring-2 ring-[#523520]" />
+          </figure>
+        </div>
+        <div className="absolute inset-x-0 bottom-2 flex justify-center gap-2.5" role="group" aria-label="Destaques">
+          {(slides.length ? slides : [0, 1, 2]).map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              disabled={!slides.length}
+              aria-label={typeof s === 'object' ? `Destaque ${i + 1}: ${s.name}` : `Destaque ${i + 1}`}
+              aria-current={slide === i}
+              onClick={() => setSlide(i)}
+              className={cn('size-1.5 rounded-full bg-brand transition-opacity', slide === i ? 'opacity-100' : 'opacity-60')}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* --------------------------------- Catálogo -------------------------------- */
 
 function useHomeSearch() {
@@ -121,20 +239,21 @@ function toggleIn(list: string | undefined, value: string) {
   return set.size ? [...set].join(',') : undefined
 }
 
-function Catalog() {
+function Catalog({
+  filtersOpen,
+  onFiltersOpenChange,
+  onOpenFilters,
+  filtersTrigger,
+}: {
+  filtersOpen: boolean
+  onFiltersOpenChange: (open: boolean) => void
+  onOpenFilters: (el: HTMLElement) => void
+  filtersTrigger: MutableRefObject<HTMLElement | null>
+}) {
   const { search, update } = useHomeSearch()
   const query = useMemo(() => toCatalogQuery(search), [search])
   const { data, isPending, isError, error, refetch, isFetching, isPlaceholderData } = useCatalog(query)
-  const [term, setTerm] = useState(search.q ?? '')
-
-  // Busca com debounce; substitui a entrada do histórico enquanto digita.
-  useEffect(() => setTerm(search.q ?? ''), [search.q])
-  useEffect(() => {
-    if ((search.q ?? '') === term.trim()) return
-    const t = setTimeout(() => void update({ q: term.trim() || undefined }, { replace: true }), 300)
-    return () => clearTimeout(t)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [term])
+  const [term, setTerm] = useSearchTerm()
 
   const activeChips = [
     ...(query.categories ?? []).map((c) => ({ label: c, clear: () => update({ cat: toggleIn(search.cat, c) }) })),
@@ -144,7 +263,7 @@ function Catalog() {
   ]
 
   return (
-    <section id="catalogo" aria-labelledby="catalogo-title" className="container-kurio mt-16 scroll-mt-4 md:mt-24">
+    <section id="catalogo" aria-labelledby="catalogo-title" className="container-kurio mt-4 scroll-mt-4 md:mt-24">
       <h2 id="catalogo-title" className="sr-only">
         Catálogo de NFTs
       </h2>
@@ -156,7 +275,7 @@ function Catalog() {
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <div role="tablist" aria-label="Seções do catálogo" className="flex flex-wrap gap-5">
+            <div role="tablist" aria-label="Seções do catálogo" className="flex flex-wrap gap-5 max-md:flex-nowrap max-md:gap-2.5">
               {TABS.map((t) => {
                 const active = (search.tab ?? 'all') === t.id
                 return (
@@ -167,14 +286,14 @@ function Catalog() {
                     aria-selected={active}
                     aria-controls="catalogo-grid"
                     onClick={() => update({ tab: t.id === 'all' ? undefined : t.id })}
-                    className={cn('border-b-2 pb-0.5 text-[15px] font-bold', active ? 'border-brand text-brand-strong' : 'border-transparent hover:text-brand-strong')}
+                    className={cn('whitespace-nowrap border-b-2 pb-0.5 text-[15px] font-bold max-md:text-sm', active ? 'border-brand text-brand-strong' : 'border-transparent hover:text-brand-strong max-md:font-normal')}
                   >
                     {t.label}
                   </button>
                 )
               })}
             </div>
-            <label className="ml-auto flex items-center gap-1 text-[15px]">
+            <label className="ml-auto flex items-center gap-1 text-[15px] max-md:hidden">
               <span>Ordenar por:</span>
               <select
                 value={search.sort ?? 'recent'}
@@ -190,7 +309,7 @@ function Catalog() {
             </label>
           </div>
 
-          <div className="mt-5 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center gap-3 max-md:hidden">
             <div className="relative min-w-0 flex-1 sm:max-w-sm" role="search">
               <label htmlFor="catalog-search" className="sr-only">
                 Buscar NFTs
@@ -204,16 +323,35 @@ function Catalog() {
                 className="field-input"
               />
             </div>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10 lg:hidden">
-                  <SlidersHorizontal aria-hidden="true" />
-                  Filtros{activeChips.length ? ` (${activeChips.length})` : ''}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
+            <Button variant="outline" size="sm" className="h-10 lg:hidden" onClick={(e) => onOpenFilters(e.currentTarget)}>
+              <SlidersHorizontal aria-hidden="true" />
+              Filtros{activeChips.length ? ` (${activeChips.length})` : ''}
+            </Button>
+            <Sheet open={filtersOpen} onOpenChange={onFiltersOpenChange}>
+              <SheetContent
+                side="left"
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault()
+                  filtersTrigger.current?.focus()
+                }}
+              >
                 <SheetTitle className="text-lg font-bold">Filtros</SheetTitle>
                 <SheetDescription className="text-sm text-muted">Combine coleções, faixa de preço e rede.</SheetDescription>
+                {/* No Figma mobile a ordenação não fica na tela: vem para o painel de filtros. */}
+                <label className="flex items-center gap-2 text-[15px] md:hidden">
+                  <span>Ordenar por:</span>
+                  <select
+                    value={search.sort ?? 'recent'}
+                    onChange={(e) => update({ sort: e.target.value === 'recent' ? undefined : (e.target.value as CatalogSort) })}
+                    className="field-input h-10 flex-1 py-1"
+                  >
+                    {Object.entries(SORT_LABEL).map(([v, l]) => (
+                      <option key={v} value={v}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Filters data={data} embedded />
               </SheetContent>
             </Sheet>
@@ -249,7 +387,7 @@ function Catalog() {
             {isError && !data ? (
               <ErrorState message={error.message} onRetry={() => void refetch()} retrying={isFetching} />
             ) : isPending ? (
-              <ul className="grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-8 xl:grid-cols-3" aria-label="Carregando NFTs" data-testid="catalog-skeleton">
+              <ul className={cn('grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-8 xl:grid-cols-3', MOBILE_GRID)} aria-label="Carregando NFTs" data-testid="catalog-skeleton">
                 {Array.from({ length: 9 }, (_, i) => (
                   <li key={i}>
                     <NftCardSkeleton />
@@ -262,7 +400,7 @@ function Catalog() {
                 <p className="mt-2 text-sm text-muted">Tente outro termo ou remova alguns filtros.</p>
               </div>
             ) : (
-              <ul className={cn('grid grid-cols-2 gap-x-4 gap-y-10 transition-opacity sm:gap-x-8 xl:grid-cols-3', isPlaceholderData && 'opacity-60')} data-testid="catalog-grid">
+              <ul className={cn('grid grid-cols-2 gap-x-4 gap-y-10 transition-opacity sm:gap-x-8 xl:grid-cols-3', MOBILE_GRID, isPlaceholderData && 'opacity-60')} data-testid="catalog-grid">
                 {data.items.map((n, i) => (
                   <li key={n.id}>
                     <NftCard nft={n} priority={i < 3} />
