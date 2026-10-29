@@ -22,6 +22,11 @@ import { emitNftUpdated, emitOrderUpdated } from './realtime'
 
 /* --------------------------------- Senhas --------------------------------- */
 
+/** Comparação de strings por código (ids e datas ISO). */
+const cmp = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
+/** Collator reutilizado: criar um por comparação (localeCompare com locale) é caro. */
+const NAME_COLLATOR = new Intl.Collator('pt-BR')
+
 export async function hashPassword(password: string, salt: string) {
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits'])
   const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: new TextEncoder().encode(salt), iterations: 60_000 }, key, 256)
@@ -123,15 +128,16 @@ export function queryCatalog(query: CatalogQuery): CatalogPage {
   result = [...result].sort((a, b) => {
     switch (sort) {
       case 'price_asc':
-        return compareEth(a.price, b.price) || a.id.localeCompare(b.id)
+        return compareEth(a.price, b.price) || cmp(a.id, b.id)
       case 'price_desc':
-        return compareEth(b.price, a.price) || a.id.localeCompare(b.id)
+        return compareEth(b.price, a.price) || cmp(a.id, b.id)
       case 'name':
-        return a.name.localeCompare(b.name, 'pt-BR')
+        return NAME_COLLATOR.compare(a.name, b.name)
       case 'trending':
         return b.trending - a.trending
       default:
-        return b.listedAt.localeCompare(a.listedAt) || Number(a.id) - Number(b.id)
+        // Datas ISO 8601 de formato fixo: a comparação direta dá a mesma ordem que localeCompare, sem ICU.
+        return cmp(b.listedAt, a.listedAt) || Number(a.id) - Number(b.id)
     }
   })
   const pageSize = query.pageSize ?? 9

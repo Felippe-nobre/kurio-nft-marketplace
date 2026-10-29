@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { toCatalogQuery, type HomeSearch } from '@/app/routes'
 import { cn, fetchPriority } from '@/lib/utils'
 import { formatEthBr } from '@/lib/money'
+import { MQ, useMediaQuery } from '@/lib/useMediaQuery'
 
 /* ----------------------- Conversão de preço sem float ---------------------- */
 const toCents = (eth: string) => {
@@ -46,11 +47,19 @@ export function HomePage() {
     filtersTrigger.current = el
     setFiltersOpen(true)
   }
+  // Cada largura monta só a sua variante (o CSS já escondia a outra): menos renderização,
+  // menos DOM e nenhuma arte do hero desktop baixada no mobile.
+  const isMd = useMediaQuery(MQ.md)
   return (
     <>
-      <MobileSearchBar onOpenFilters={openFilters} />
-      <MobileHero />
-      <Hero />
+      {isMd ? (
+        <Hero />
+      ) : (
+        <>
+          <MobileSearchBar onOpenFilters={openFilters} />
+          <MobileHero />
+        </>
+      )}
       <Catalog filtersOpen={filtersOpen} onFiltersOpenChange={setFiltersOpen} onOpenFilters={openFilters} filtersTrigger={filtersTrigger} />
       <Promos />
       <Journal />
@@ -254,6 +263,9 @@ function Catalog({
   const query = useMemo(() => toCatalogQuery(search), [search])
   const { data, isPending, isError, error, refetch, isFetching, isPlaceholderData } = useCatalog(query)
   const [term, setTerm] = useSearchTerm()
+  // A coluna lateral (filtros com slider + destaque) só aparece a partir de 1024 px; abaixo disso
+  // os filtros abrem no Sheet. Não montá-la evita o layout forçado do slider (Radix useSize).
+  const isLg = useMediaQuery(MQ.lg)
 
   const activeChips = [
     ...(query.categories ?? []).map((c) => ({ label: c, clear: () => update({ cat: toggleIn(search.cat, c) }) })),
@@ -268,10 +280,12 @@ function Catalog({
         Catálogo de NFTs
       </h2>
       <div className="grid gap-8 lg:grid-cols-[310px_1fr] lg:gap-12">
-        <div className="hidden lg:block">
-          <Filters data={data} />
-          <Featured />
-        </div>
+        {isLg && (
+          <div className="hidden lg:block">
+            <Filters data={data} />
+            <Featured />
+          </div>
+        )}
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
