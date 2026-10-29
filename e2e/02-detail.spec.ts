@@ -1,4 +1,4 @@
-import { test, expect, open } from './fixtures'
+import { test, expect, open, server } from './fixtures'
 
 test.describe('2. Detalhe do NFT', () => {
   test('acesso direto, refresh e informações @mobile', async ({ app: page }) => {
@@ -29,5 +29,17 @@ test.describe('2. Detalhe do NFT', () => {
     await open(page, '/nft/14')
     await expect(page.getByTestId('availability')).toContainText('esgotada')
     await expect(page.getByRole('button', { name: 'Esgotado' })).toBeDisabled()
+  })
+
+  test('limite de quantidade respeita a disponibilidade da edição', async ({ app: page }) => {
+    await open(page, '/')
+    await server(page).updateEdition('1', '1-50', { available: 3 })
+    await open(page, '/nft/1')
+    await expect(page.getByTestId('availability')).toContainText('3 de 50 disponíveis')
+    const increase = page.getByRole('button', { name: 'Aumentar quantidade de Emerald Ape #042' })
+    await increase.click()
+    await increase.click()
+    await expect(page.getByRole('group', { name: 'Emerald Ape #042' }).locator('output')).toHaveText('3')
+    await expect(increase).toBeDisabled()
   })
 })
