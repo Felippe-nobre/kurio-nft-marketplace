@@ -46,7 +46,7 @@ export function Footer() {
 
   return (
     <footer className="container-kurio mt-20" id="criadores">
-      <div className="grid gap-8 bg-surface px-6 py-8 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.3fr] lg:px-12">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 bg-surface px-6 py-8 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.3fr] lg:px-12">
         {FEATURES.map((f) => (
           <div key={f.letter} className="lg:border-r lg:border-brand lg:pr-6">
             <span aria-hidden="true" className="flex size-[74px] items-center justify-center rounded-full bg-brand text-2xl font-bold text-primary-foreground">

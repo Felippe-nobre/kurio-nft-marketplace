@@ -11,7 +11,9 @@ test.describe('9. Preço/disponibilidade via Socket.IO durante o checkout', () =
     await server(page).updateEdition('1', '1-50', { price: '1.25' })
     await expect(page.getByTestId('line-total')).toContainText('1.25 ETH')
     await expect(page.getByTestId('subtotal')).toHaveText('1.25 ETH')
-    await expect(page.getByTestId('live-polite')).toContainText(/Preço atualizado|/)
+    // A interface informa a alteração (aviso visível e região aria-live).
+    await expect(page.getByTestId('cart-changed')).toContainText('Emerald Ape #042')
+    await expect(page.getByTestId('live-polite')).toContainText('Emerald Ape #042')
 
     // Checkout com a cotação nova
     await page.getByRole('link', { name: 'Conectar e finalizar' }).click()

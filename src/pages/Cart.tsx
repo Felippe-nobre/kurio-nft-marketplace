@@ -10,8 +10,10 @@ import { NftRail } from '@/components/NftRail'
 import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useEffect } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { onNftUpdated } from '@/lib/realtime'
+import { announce } from '@/lib/announcer'
 
 const MAX_PER_LINE = 10
 
@@ -21,10 +23,25 @@ export function CartPage() {
   const firstId = cart.data?.items[0]?.nftId
   const related = useRelated(firstId ?? '1')
   const highlights = useHighlights()
+  // Aviso visível de mudança recebida via Socket.IO (nft.updated) com o carrinho aberto.
+  // Os valores em si vêm do servidor: o evento invalida o carrinho (lib/realtime.tsx).
+  const [changed, setChanged] = useState<string | null>(null)
+  const items = useRef(cart.data?.items ?? [])
+  items.current = cart.data?.items ?? []
 
   useEffect(() => {
     document.title = 'Carrinho — Kurio'
   }, [])
+  useEffect(
+    () =>
+      onNftUpdated((e) => {
+        const line = items.current.find((l) => l.nftId === e.resource.id)
+        if (!line) return
+        setChanged(line.name)
+        announce(`O preço ou a disponibilidade de ${line.name} mudou. Os valores do carrinho foram atualizados.`)
+      }),
+    [],
+  )
   const hasItems = !!cart.data?.items.length
 
   return (
@@ -61,6 +78,16 @@ export function CartPage() {
             <h2 id="cart-items-title" className="sr-only">
               Itens do carrinho
             </h2>
+            {changed && (
+              <div className="mt-3 flex items-start justify-between gap-3 border border-brand/50 bg-brand/10 p-3 text-sm" data-testid="cart-changed">
+                <p>
+                  O preço ou a disponibilidade de <strong>{changed}</strong> mudou. Os valores do carrinho foram atualizados.
+                </p>
+                <button type="button" onClick={() => setChanged(null)} className="shrink-0 text-brand-strong hover:underline">
+                  Entendi
+                </button>
+              </div>
+            )}
             <table className="w-full border-separate border-spacing-y-3 text-left max-md:block">
               <caption className="sr-only">NFTs no carrinho com preço, quantidade e total</caption>
               <thead className="hidden md:table-header-group">

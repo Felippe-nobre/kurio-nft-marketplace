@@ -1,6 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Star, Trash2 } from 'lucide-react'
+import { Pencil, Star, Trash2 } from 'lucide-react'
 import type { Network, Wallet, WalletBody, WalletProvider } from '@/api/contracts'
 import { NETWORKS, WALLET_PROVIDERS } from '@/api/contracts'
 import { api } from '@/api/endpoints'
@@ -109,6 +109,15 @@ export function WalletsPage() {
 }
 
 function WalletCard({ wallet, onPrimary, onRemove, busy }: { wallet: Wallet; onPrimary?: () => void; onRemove: () => void; busy: boolean }) {
+  const [editing, setEditing] = useState(false)
+  const editBtn = useRef<HTMLButtonElement>(null)
+  const wasEditing = useRef(false)
+  // Ao fechar a edição (salvar ou cancelar), devolve o foco ao botão "Editar" já reabilitado.
+  useEffect(() => {
+    if (wasEditing.current && !editing) editBtn.current?.focus()
+    wasEditing.current = editing
+  }, [editing])
+  const closeEdit = () => setEditing(false)
   return (
     <article className="mt-4 flex flex-wrap items-center gap-4 bg-surface p-4" aria-label={`Carteira ${wallet.label}`} data-testid="wallet-card">
       <div className="min-w-0 flex-1">
@@ -122,7 +131,10 @@ function WalletCard({ wallet, onPrimary, onRemove, busy }: { wallet: Wallet; onP
           {wallet.ensName ? ` · ${wallet.ensName}` : ''}
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
+        <Button ref={editBtn} size="sm" variant="ghost" onClick={() => setEditing(true)} disabled={busy || editing} aria-expanded={editing} aria-label={`Editar carteira ${wallet.label}`}>
+          <Pencil aria-hidden="true" /> Editar
+        </Button>
         {onPrimary && (
           <Button size="sm" variant="outline" onClick={onPrimary} disabled={busy}>
             <Star aria-hidden="true" /> Tornar principal
@@ -132,7 +144,66 @@ function WalletCard({ wallet, onPrimary, onRemove, busy }: { wallet: Wallet; onP
           <Trash2 aria-hidden="true" /> Remover
         </Button>
       </div>
+      {editing && <WalletEditForm wallet={wallet} onDone={closeEdit} />}
     </article>
+  )
+}
+
+/** Edição dos dados da carteira (PATCH /api/wallets/:id), com validação local e erros da API. */
+function WalletEditForm({ wallet, onDone }: { wallet: Wallet; onDone: () => void }) {
+  const { scope } = useSession()
+  const qc = useQueryClient()
+  const [label, setLabel] = useState(wallet.label)
+  const [error, setError] = useState<string>()
+  const id = `we-${wallet.id}-label`
+  const save = useMutation({
+    mutationFn: (l: string) => api.updateWallet(wallet.id, { label: l }),
+    onSuccess: (list) => {
+      qc.setQueryData(qk.wallets(scope), list)
+      announce('Carteira atualizada.')
+      onDone()
+    },
+    onError: (e) => {
+      if (isApiError(e) && e.fields?.label) {
+        setError(e.fields.label)
+        document.getElementById(id)?.focus()
+      }
+    },
+  })
+  const submit = (e: FormEvent) => {
+    e.preventDefault()
+    const l = label.trim()
+    if (l.length < 2) {
+      setError('Informe um apelido com ao menos 2 caracteres.')
+      document.getElementById(id)?.focus()
+      return
+    }
+    save.mutate(l)
+  }
+  return (
+    <form onSubmit={submit} noValidate className="basis-full border-t border-line pt-4" aria-label={`Editar carteira ${wallet.label}`}>
+      <Field id={id} label="Apelido da carteira" required error={error} className="max-w-sm">
+        <Input
+          value={label}
+          autoFocus
+          onChange={(e) => {
+            setLabel(e.target.value)
+            setError(undefined)
+          }}
+        />
+      </Field>
+      <div className="mt-3 space-y-3">
+        <FormError message={save.isError && !(isApiError(save.error) && save.error.fields) ? save.error.message : null} />
+        <div className="flex gap-3">
+          <Button type="submit" size="sm" disabled={save.isPending}>
+            {save.isPending ? 'Salvando…' : 'Salvar alterações'}
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={onDone}>
+            Cancelar
+          </Button>
+        </div>
+      </div>
+    </form>
   )
 }
 

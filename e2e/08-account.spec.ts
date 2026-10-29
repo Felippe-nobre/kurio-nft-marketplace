@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { test, expect, open, login } from './fixtures'
+import { test, expect, open, login, server } from './fixtures'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 
@@ -68,5 +68,35 @@ test.describe('8. Perfil, avatar, senha e carteiras', () => {
     await expect(page.getByRole('article', { name: 'Carteira Reserva' })).toContainText('Principal')
     await page.getByRole('button', { name: 'Remover carteira Cofre principal' }).click()
     await expect(page.getByTestId('wallet-card')).toHaveCount(1)
+  })
+
+  test('carteiras: edição com validação, erro da API e persistência após refresh @mobile', async ({ app: page }) => {
+    await login(page)
+    await open(page, '/wallets')
+    const edit = page.getByRole('button', { name: 'Editar carteira Cofre principal' })
+    await edit.click()
+    const form = page.getByRole('form', { name: 'Editar carteira Cofre principal' })
+    const label = form.getByLabel('Apelido da carteira')
+    await expect(label).toBeFocused()
+
+    // Validação local associada ao campo.
+    await label.fill('A')
+    await form.getByRole('button', { name: 'Salvar alterações' }).click()
+    await expect(label).toHaveAttribute('aria-invalid', 'true')
+    await expect(form.getByText('Informe um apelido com ao menos 2 caracteres.')).toBeVisible()
+
+    // Falha da API: mensagem exibida e nada é alterado.
+    await server(page).setScenario({ failures: { 'PATCH /api/wallets/:id': { kind: '500', times: 1 } } })
+    await label.fill('Cofre de longo prazo')
+    await form.getByRole('button', { name: 'Salvar alterações' }).click()
+    await expect(form.getByRole('alert')).toBeVisible()
+    await expect(page.getByRole('article', { name: 'Carteira Cofre principal' })).toBeVisible()
+
+    // Nova tentativa salva; o foco volta ao botão de edição; o dado persiste após refresh.
+    await form.getByRole('button', { name: 'Salvar alterações' }).click()
+    await expect(page.getByRole('article', { name: 'Carteira Cofre de longo prazo' })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Editar carteira Cofre de longo prazo' })).toBeFocused()
+    await page.reload()
+    await expect(page.getByRole('article', { name: 'Carteira Cofre de longo prazo' })).toContainText('Principal')
   })
 })

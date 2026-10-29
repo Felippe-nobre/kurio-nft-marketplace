@@ -275,7 +275,7 @@ function Catalog({
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-            <div role="tablist" aria-label="Seções do catálogo" className="flex flex-wrap gap-5 max-md:flex-nowrap max-md:gap-2.5">
+            <div role="tablist" aria-label="Seções do catálogo" className="flex flex-wrap gap-5 min-[360px]:max-md:flex-nowrap max-md:gap-2.5">
               {TABS.map((t) => {
                 const active = (search.tab ?? 'all') === t.id
                 return (
