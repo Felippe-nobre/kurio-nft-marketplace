@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-10-29T01:27:53.373Z",
-  "lighthouse": "12.8.2",
+  "generatedAt": "2026-10-29T02:30:07.665Z",
+  "lighthouse": "13.6.0",
   "chrome": "153.0.0.0",
   "node": "v22.23.4",
   "platform": "Linux 6.18.44-fc-v185 (x64)",
@@ -21,41 +21,41 @@
       "profile": "mobile",
       "runs": [
         {
-          "performance": 63,
+          "performance": 71,
           "accessibility": 97,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 4056,
+          "lcpMs": 3732,
           "cls": 0,
-          "tbtMs": 843
+          "tbtMs": 742
+        },
+        {
+          "performance": 69,
+          "accessibility": 97,
+          "best-practices": 100,
+          "seo": 100,
+          "lcpMs": 3870,
+          "cls": 0,
+          "tbtMs": 831
         },
         {
           "performance": 67,
           "accessibility": 97,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 3927,
+          "lcpMs": 3851,
           "cls": 0,
-          "tbtMs": 658
-        },
-        {
-          "performance": 70,
-          "accessibility": 97,
-          "best-practices": 100,
-          "seo": 100,
-          "lcpMs": 3900,
-          "cls": 0,
-          "tbtMs": 564
+          "tbtMs": 933
         }
       ],
       "median": {
-        "performance": 67,
+        "performance": 69,
         "accessibility": 97,
         "best-practices": 100,
         "seo": 100,
-        "lcpMs": 3927,
+        "lcpMs": 3851,
         "cls": 0,
-        "tbtMs": 658
+        "tbtMs": 831
       }
     },
     {
@@ -64,31 +64,31 @@
       "profile": "mobile",
       "runs": [
         {
-          "performance": 62,
-          "accessibility": 97,
-          "best-practices": 100,
-          "seo": 100,
-          "lcpMs": 3834,
-          "cls": 0,
-          "tbtMs": 952
-        },
-        {
           "performance": 68,
           "accessibility": 97,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 3797,
+          "lcpMs": 3639,
           "cls": 0,
-          "tbtMs": 629
+          "tbtMs": 1011
         },
         {
           "performance": 70,
           "accessibility": 97,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 3707,
+          "lcpMs": 3677,
           "cls": 0,
-          "tbtMs": 568
+          "tbtMs": 821
+        },
+        {
+          "performance": 68,
+          "accessibility": 97,
+          "best-practices": 100,
+          "seo": 100,
+          "lcpMs": 3576,
+          "cls": 0,
+          "tbtMs": 1088
         }
       ],
       "median": {
@@ -96,9 +96,9 @@
         "accessibility": 97,
         "best-practices": 100,
         "seo": 100,
-        "lcpMs": 3797,
+        "lcpMs": 3639,
         "cls": 0,
-        "tbtMs": 629
+        "tbtMs": 1011
       }
     },
     {
@@ -107,41 +107,41 @@
       "profile": "desktop",
       "runs": [
         {
-          "performance": 93,
+          "performance": 96,
           "accessibility": 100,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 1520,
+          "lcpMs": 1338,
           "cls": 0,
-          "tbtMs": 24
+          "tbtMs": 25
         },
         {
-          "performance": 92,
+          "performance": 96,
           "accessibility": 100,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 1571,
+          "lcpMs": 1397,
           "cls": 0,
-          "tbtMs": 22
+          "tbtMs": 47
         },
         {
-          "performance": 93,
+          "performance": 96,
           "accessibility": 100,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 1533,
+          "lcpMs": 1363,
           "cls": 0,
-          "tbtMs": 30
+          "tbtMs": 44
         }
       ],
       "median": {
-        "performance": 93,
+        "performance": 96,
         "accessibility": 100,
         "best-practices": 100,
         "seo": 100,
-        "lcpMs": 1533,
+        "lcpMs": 1363,
         "cls": 0,
-        "tbtMs": 24
+        "tbtMs": 44
       }
     },
     {
@@ -150,41 +150,41 @@
       "profile": "desktop",
       "runs": [
         {
-          "performance": 96,
+          "performance": 97,
           "accessibility": 97,
           "best-practices": 100,
           "seo": 100,
-          "lcpMs": 1091,
-          "cls": 0.083,
-          "tbtMs": 6
-        },
-        {
-          "performance": 96,
-          "accessibility": 97,
-          "best-practices": 100,
-          "seo": 100,
-          "lcpMs": 1076,
-          "cls": 0.083,
-          "tbtMs": 14
-        },
-        {
-          "performance": 96,
-          "accessibility": 97,
-          "best-practices": 100,
-          "seo": 100,
-          "lcpMs": 1075,
+          "lcpMs": 1001,
           "cls": 0.083,
           "tbtMs": 0
+        },
+        {
+          "performance": 97,
+          "accessibility": 97,
+          "best-practices": 100,
+          "seo": 100,
+          "lcpMs": 1008,
+          "cls": 0.083,
+          "tbtMs": 5
+        },
+        {
+          "performance": 97,
+          "accessibility": 97,
+          "best-practices": 100,
+          "seo": 100,
+          "lcpMs": 1019,
+          "cls": 0.083,
+          "tbtMs": 11
         }
       ],
       "median": {
-        "performance": 96,
+        "performance": 97,
         "accessibility": 97,
         "best-practices": 100,
         "seo": 100,
-        "lcpMs": 1076,
+        "lcpMs": 1008,
         "cls": 0.083,
-        "tbtMs": 6
+        "tbtMs": 5
       }
     }
   ]

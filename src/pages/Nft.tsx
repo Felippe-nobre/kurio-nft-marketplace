@@ -30,7 +30,7 @@ export function NftPage() {
 
   return (
     <div className="container-kurio pt-8 max-md:pb-44 max-md:pt-0">
-      {!data && <MobileTopBar fallback="/" />}
+      {!data && <MobileTopBar fallback="/" className="pb-[9px] pt-[23px]" />}
       <Breadcrumb className="max-md:hidden" items={[{ label: 'Início', to: '/' }, { label: 'Mercado', to: '/', hash: 'catalogo' }, ...(data ? [{ label: data.name }] : [])]} />
       {isPending ? (
         <DetailSkeleton />
@@ -68,21 +68,35 @@ function NftNotFound() {
   )
 }
 
+/**
+ * Espelha a grade e as alturas do detalhe real (Detail) em cada largura, incluindo o bloco
+ * de abas. Sem isso, "Mais desta coleção" se deslocava quando o NFT carregava (CLS 0,083 no
+ * Lighthouse desktop; até 953 px em 768 px). Alturas medidas no layout real (390–1440 px).
+ */
 function DetailSkeleton() {
   return (
-    <div className="mt-4 grid gap-8 md:grid-cols-[100px_minmax(0,444px)_1fr]" aria-busy="true" aria-label="Carregando NFT" data-testid="detail-skeleton">
-      <div className="hidden flex-col gap-4 md:flex">
-        {Array.from({ length: 3 }, (_, i) => (
-          <Skeleton key={i} className="aspect-square w-full" />
-        ))}
+    <div aria-busy="true" aria-label="Carregando NFT" data-testid="detail-skeleton">
+      <div className="mt-4 grid gap-6 max-md:mt-0 max-md:gap-0 md:grid-cols-[100px_minmax(0,444px)] lg:grid-cols-[100px_minmax(0,444px)_1fr] lg:gap-8">
+        <div className="flex flex-col gap-4 max-md:hidden">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="aspect-square w-full" />
+          ))}
+        </div>
+        <div className="bg-surface p-5 max-md:bg-transparent max-md:p-0">
+          <Skeleton className="aspect-square w-full max-md:rounded-2xl" />
+        </div>
+        <div className="h-[360px] space-y-4 md:col-span-2 lg:col-span-1 min-[768px]:h-[483px] min-[1024px]:h-[587px] min-[1100px]:h-[511px] min-[1180px]:h-[483px] max-md:relative max-md:z-10 max-md:-mx-6 max-md:-mt-[35px] max-md:rounded-t-[28px] max-md:bg-surface max-md:px-6 max-md:pt-8">
+          <Skeleton className="h-9 w-3/4" />
+          <Skeleton className="h-7 w-1/3" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-10 w-2/3" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       </div>
-      <Skeleton className="aspect-square w-full" />
-      <div className="space-y-4">
-        <Skeleton className="h-9 w-3/4" />
-        <Skeleton className="h-7 w-1/3" />
+      <div className="mt-16 h-[650px] space-y-3 min-[768px]:h-[382px] min-[1024px]:h-[334px] min-[1100px]:h-[310px]">
+        <Skeleton className="h-8 w-full max-w-md" />
         <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-10 w-2/3" />
-        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-16 w-full" />
       </div>
     </div>
   )
