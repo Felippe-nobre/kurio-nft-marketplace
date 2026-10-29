@@ -15,7 +15,7 @@ Executada em uma pasta nova a partir do commit final (`git archive`, sem `node_m
 | Lint | `npm run lint` | ✅ sem erros nem avisos |
 | Build de produção | `npm run build` | ✅ |
 | Build de demonstração | `npm run build:demo` | ✅ |
-| E2E + regressão visual | `npx playwright test` | ✅ **66/66** em 4,5 min (desktop: 45 funcionais + 4 visuais; mobile: 13 fluxos `@mobile` + 4 visuais) |
+| E2E + regressão visual | `npx playwright test` | ✅ **66/66** em 4,5 min (desktop: 44 funcionais + 4 visuais; mobile: 14 fluxos `@mobile` + 4 visuais) |
 | Rotas | `npm run check:routes` | ✅ 108/108 (acesso direto e refresh de todas as rotas, públicas, privadas sem sessão e logadas, em 390/768/1440 px; sem erros de console nem overflow) |
 | Segurança | `npm audit` · `npm audit --omit=dev` | ✅ 0 vulnerabilidades · 0 vulnerabilidades |
 | Lighthouse | `npm run lighthouse` | ⚠️ desktop atinge todas as metas; mobile fica abaixo em Performance (seção 10) |
