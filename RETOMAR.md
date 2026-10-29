@@ -1,17 +1,27 @@
-# Retomar
+# Retomar o trabalho
 
-**Situação:** o ajuste do mobile às 6 telas do Figma foi **concluído** em 28/10/2026 (noite). O detalhamento (o que mudou, o que ficou diferente de propósito, testes e Lighthouse) está no `STATUS.md`, seção "Ajuste do mobile ao Figma".
+Estado: **concluído para entrega**, faltando apenas a publicação (etapa do responsável). Situação completa, matriz do briefing e pendências em [STATUS.md](./STATUS.md).
 
-Histórico git dentro do projeto:
-- `8ecc61a`: versão validada antes do ajuste mobile;
-- os commits seguintes: navegação e Início, depois Detalhes, Carrinho, Pagamento e Login/Cadastro, e por fim testes, correções e documentação.
+## Histórico (git local)
 
-Ferramentas em `docs/figma-mobile/`:
-- `capture.cjs` captura as 6 telas a 414×896 e mede a rolagem horizontal;
-- `sbs.py` monta as comparações lado a lado com as referências do Figma (as referências ficam fora do projeto, nos ZIPs `Frontend_Challenge*.zip`);
-- `cls.cjs` mede deslocamentos de layout no Início mobile.
+| Commit | Conteúdo |
+|---|---|
+| `8ecc61a` | baseline recebido |
+| `4b595d4` · `5af016f` · `9ba8768` | ajuste do mobile às 6 telas do Figma |
+| `3350ee6` | aviso de mudança no carrinho, edição de carteiras, grupo de testes 13, reflow em 320 px |
+| `c8e5daa` | lighthouse 13.6 e vite 6.4.5 (0 vulnerabilidades); `check:routes` |
+| `9944cca` | `modulepreload` do chunk de mocks; filtros de diagnóstico do Lighthouse |
+| `e87c980` | esqueleto do detalhe com as alturas reais (CLS 0) |
+| `064f68a` · `2b7ef2d` | documentação, Lighthouse oficial, testes de limite de quantidade e de idempotência |
 
-Pendências conhecidas, todas descritas no `STATUS.md`:
-- Performance mobile do Lighthouse abaixo de 90;
-- telas sem referência no Figma não foram comparadas;
-- testes só no Chromium.
+## Próximos passos
+
+1. Publicar na Vercel (instruções no README, seção "Deploy").
+2. Rodar `BASE_URL=<url publicada> npm run check:routes` e um fluxo completo na URL publicada.
+3. Atualizar a linha "Deploy" do STATUS.md com a URL.
+
+## Ferramentas úteis
+
+- `npm run check` — typecheck, lint, build demo e E2E.
+- `LH_PAGES=inicio LH_PROFILES=mobile LH_RUNS=1 npm run lighthouse` — Lighthouse parcial para diagnóstico (grava em `lighthouse/diagnostics/`).
+- `docs/figma-mobile/` — scripts de captura e a comparação lado a lado com o Figma.
