@@ -10,6 +10,23 @@ import { Field, FormError } from '@/components/Field'
 import { useLogin, useRegister } from '@/hooks/useAuth'
 import { isApiError } from '@/api/http'
 import { sessionStore, useSession } from '@/lib/session'
+import { cn } from '@/lib/utils'
+
+/** Ícones dos botões de login social (Figma). */
+function ProviderIcon({ provider }: { provider: 'Google' | 'Facebook' }) {
+  return provider === 'Google' ? (
+    <svg viewBox="0 0 24 24" className="!size-5" aria-hidden="true">
+      <path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z" />
+      <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z" />
+      <path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9l3.7-2.8Z" />
+      <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4Z" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" className="!size-5" aria-hidden="true">
+      <path fill="#3b5ba8" d="M13.5 22v-8.2h2.8l.4-3.2h-3.2V8.5c0-.9.3-1.6 1.6-1.6h1.7V4.1c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.3H7.3v3.2h2.8V22h3.4Z" />
+    </svg>
+  )
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -46,32 +63,53 @@ function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         <HomePage />
       </div>
       <Dialog open onOpenChange={(o) => !o && close()}>
-        <DialogContent className="max-w-[500px] px-0 pb-10 pt-8" aria-describedby="auth-desc">
-          <DialogTitle className="flex items-center justify-center gap-2 text-xl font-medium">
-            <Link to="/login" search={{ redirect }} replace className={mode === 'login' ? 'text-brand-strong' : 'text-text hover:text-brand-strong'} aria-current={mode === 'login' ? 'page' : undefined}>
+        {/* Figma mobile: tela cheia com a marca, título, formulário e link de troca no rodapé. */}
+        <DialogContent
+          className="max-w-[500px] px-0 pb-10 pt-8 max-md:inset-0 max-md:left-0 max-md:top-0 max-md:h-dvh max-md:max-h-none max-md:w-full max-md:max-w-none max-md:translate-x-0 max-md:translate-y-0 max-md:border-0 max-md:bg-bg max-md:px-7 max-md:pb-8 max-md:pt-[132px] max-md:shadow-none"
+          closeClassName="max-md:hidden"
+          aria-describedby="auth-desc"
+        >
+          <p className="text-center text-[32px] font-bold leading-none tracking-[0.12em] md:hidden" aria-hidden="true">
+            KURIO
+          </p>
+          <DialogTitle className="flex items-center justify-center gap-2 text-xl font-medium max-md:mt-[93px] max-md:font-bold">
+            <span className="md:hidden">{mode === 'login' ? 'Entrar' : 'Criar perfil de colecionador'}</span>
+            <Link to="/login" search={{ redirect }} replace className={cn('max-md:hidden', mode === 'login' ? 'text-brand-strong' : 'text-text hover:text-brand-strong')} aria-current={mode === 'login' ? 'page' : undefined}>
               Entrar
             </Link>
-            <span className="h-5 w-px bg-brand" aria-hidden="true" />
-            <Link to="/cadastro" search={{ redirect }} replace className={mode === 'register' ? 'text-brand-strong' : 'text-text hover:text-brand-strong'} aria-current={mode === 'register' ? 'page' : undefined}>
+            <span className="h-5 w-px bg-brand max-md:hidden" aria-hidden="true" />
+            <Link to="/cadastro" search={{ redirect }} replace className={cn('max-md:hidden', mode === 'register' ? 'text-brand-strong' : 'text-text hover:text-brand-strong')} aria-current={mode === 'register' ? 'page' : undefined}>
               Criar conta
             </Link>
           </DialogTitle>
-          <DialogDescription id="auth-desc" className="mx-auto mt-7 max-w-[310px] text-center text-xs text-text">
+          <DialogDescription id="auth-desc" className="mx-auto mt-7 max-w-[310px] text-center text-xs text-text max-md:sr-only">
             {mode === 'login' ? 'Entre para gerenciar sua carteira, coleção e perfil de criador.' : 'Crie seu perfil de colecionador e conecte uma carteira quando quiser.'}
           </DialogDescription>
-          <div className="mx-auto mt-6 w-full max-w-[340px] px-4">{mode === 'login' ? <LoginForm /> : <RegisterForm />}</div>
-          <div className="mt-6 flex items-center gap-3 text-sm" aria-hidden="true">
+          <div className="mx-auto mt-6 w-full max-w-[340px] px-4 max-md:mt-[27px] max-md:max-w-none max-md:px-0">{mode === 'login' ? <LoginForm /> : <RegisterForm />}</div>
+          <div className="mt-6 flex items-center gap-3 text-sm max-md:mt-10 max-md:text-[13px]" aria-hidden="true">
             <span className="h-px flex-1 bg-line" />
             Ou continue com
             <span className="h-px flex-1 bg-line" />
           </div>
-          <div className="mx-auto mt-4 grid w-full max-w-[340px] gap-3 px-4">
-            {['Google', 'Facebook'].map((p) => (
-              <Button key={p} variant="outline" className="border-line text-xs font-medium" onClick={() => toast.info(`Login com ${p} indisponível nesta demonstração. Use e-mail e senha.`)}>
+          <div className="mx-auto mt-4 grid w-full max-w-[340px] gap-3 px-4 max-md:mt-3 max-md:max-w-none max-md:gap-4 max-md:px-0">
+            {(['Google', 'Facebook'] as const).map((p) => (
+              <Button key={p} variant="outline" className="border-line text-xs font-medium max-md:text-[13px] max-md:font-normal max-md:text-muted" onClick={() => toast.info(`Login com ${p} indisponível nesta demonstração. Use e-mail e senha.`)}>
+                <ProviderIcon provider={p} />
                 Continuar com {p}
               </Button>
             ))}
           </div>
+          <p className="mt-10 text-center text-sm text-muted md:hidden">
+            {mode === 'login' ? (
+              <Link to="/cadastro" search={{ redirect }} replace className="hover:text-brand-strong">
+                Novo na Kurio? Crie uma conta
+              </Link>
+            ) : (
+              <Link to="/login" search={{ redirect }} replace className="hover:text-brand-strong">
+                Já tem uma conta? Entre
+              </Link>
+            )}
+          </p>
         </DialogContent>
       </Dialog>
     </>
@@ -114,10 +152,10 @@ function LoginForm() {
         </p>
       )}
       <Field id="login-email" label={<span className="sr-only">E-mail</span>} error={errors.email}>
-        <Input type="email" autoComplete="email" placeholder="contato@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input type="email" autoComplete="email" placeholder="contato@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <Field id="login-password" label={<span className="sr-only">Senha</span>} error={errors.password}>
-        <PasswordInput autoComplete="current-password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <PasswordInput autoComplete="current-password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <div className="text-right">
         <button type="button" className="text-sm text-brand-strong hover:underline" onClick={() => toast.info('Recuperação de senha indisponível nesta demonstração.')}>
@@ -125,7 +163,7 @@ function LoginForm() {
         </button>
       </div>
       <FormError message={serverError} />
-      <Button type="submit" className="h-11 w-full text-base" disabled={login.isPending}>
+      <Button type="submit" className="h-11 w-full text-base max-md:!mt-[25px] max-md:h-[60px] max-md:rounded-lg" disabled={login.isPending}>
         {login.isPending ? 'Entrando…' : 'Entrar'}
       </Button>
     </form>
@@ -172,20 +210,27 @@ function RegisterForm() {
   return (
     <form onSubmit={submit} noValidate className="space-y-3">
       <Field id="reg-username" label={<span className="sr-only">Nome de usuário</span>} error={errors.username}>
-        <Input autoComplete="username" placeholder="Nome de usuário" value={v.username} onChange={set('username')} />
+        <Input autoComplete="username" placeholder="Nome de usuário" value={v.username} onChange={set('username')} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <Field id="reg-email" label={<span className="sr-only">E-mail</span>} error={errors.email}>
-        <Input type="email" autoComplete="email" placeholder="Digite seu e-mail" value={v.email} onChange={set('email')} />
+        <Input type="email" autoComplete="email" placeholder="Digite seu e-mail" value={v.email} onChange={set('email')} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <Field id="reg-password" label={<span className="sr-only">Senha</span>} error={errors.password} hint={<span className="sr-only">Mínimo de 8 caracteres.</span>}>
-        <PasswordInput autoComplete="new-password" placeholder="Senha" value={v.password} onChange={set('password')} />
+        <PasswordInput autoComplete="new-password" placeholder="Senha" value={v.password} onChange={set('password')} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <Field id="reg-confirmPassword" label={<span className="sr-only">Confirmar senha</span>} error={errors.confirmPassword}>
-        <PasswordInput autoComplete="new-password" placeholder="Confirmar senha" value={v.confirmPassword} onChange={set('confirmPassword')} />
+        <PasswordInput autoComplete="new-password" placeholder="Confirmar senha" value={v.confirmPassword} onChange={set('confirmPassword')} className="max-md:h-[50px] max-md:rounded-lg max-md:px-4" />
       </Field>
       <FormError message={serverError} />
-      <Button type="submit" className="h-11 w-full text-base" disabled={register.isPending}>
-        {register.isPending ? 'Criando conta…' : 'Criar conta'}
+      <Button type="submit" className="h-11 w-full text-base max-md:!mt-[33px] max-md:h-[60px] max-md:rounded-lg" disabled={register.isPending}>
+        {register.isPending ? (
+          'Criando conta…'
+        ) : (
+          <>
+            <span className="md:hidden">Criar perfil</span>
+            <span className="max-md:hidden">Criar conta</span>
+          </>
+        )}
       </Button>
     </form>
   )

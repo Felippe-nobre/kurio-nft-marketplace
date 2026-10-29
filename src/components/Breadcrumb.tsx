@@ -1,9 +1,10 @@
 import { Fragment } from 'react'
 import { Link } from '@tanstack/react-router'
+import { cn } from '@/lib/utils'
 
-export function Breadcrumb({ items }: { items: { label: string; to?: '/'; hash?: string }[] }) {
+export function Breadcrumb({ items, className }: { items: { label: string; to?: '/'; hash?: string }[]; className?: string }) {
   return (
-    <nav aria-label="Trilha de navegação" className="text-sm font-bold">
+    <nav aria-label="Trilha de navegação" className={cn('text-sm font-bold', className)}>
       <ol className="flex flex-wrap items-center gap-1.5">
         {items.map((it, i) => (
           <Fragment key={it.label}>

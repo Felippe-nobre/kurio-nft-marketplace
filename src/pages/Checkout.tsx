@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, Loader2, PlugZap, Unplug } from 'lucide-react'
-import type { CollectorInfo, CreateOrderBody, Network, Order, Quote, WalletConnection, WalletProvider } from '@/api/contracts'
+import { AlertTriangle, CheckCircle2, Loader2, MoreVertical, PlugZap, Unplug, Wallet as WalletIcon } from 'lucide-react'
+import type { CollectorInfo, CreateOrderBody, Network, Order, Quote, Wallet, WalletConnection, WalletProvider } from '@/api/contracts'
 import { NETWORKS, WALLET_PROVIDERS } from '@/api/contracts'
 import { api } from '@/api/endpoints'
 import { isApiError, type ApiError } from '@/api/http'
@@ -13,6 +13,7 @@ import { onNftUpdated, onReconnected } from '@/lib/realtime'
 import { announce } from '@/lib/announcer'
 import { attemptFor, contentHash, markAttemptOrder, pendingOrder } from '@/lib/idempotency'
 import { Breadcrumb } from '@/components/Breadcrumb'
+import { MobileTopBar } from '@/components/MobileTopBar'
 import { CouponForm, Totals } from '@/components/Summary'
 import { Field, FormError } from '@/components/Field'
 import { WalletStrip } from '@/components/layout/Footer'
@@ -267,11 +268,20 @@ export function CheckoutPage() {
     )
 
   const q = quote.data
+  // Figma mobile: carteira salva escolhida em cards (mesmo efeito do seletor "Endereço da carteira").
+  const pickWallet = (w: Wallet) => {
+    setUseOther(false)
+    setForm((f) => ({ ...f, address: w.address, network: w.network, provider: w.provider }))
+    setErrors((e) => ({ ...e, address: undefined, network: undefined, provider: undefined }))
+    if (connection) void disconnect.mutateAsync()
+  }
+
   const canConfirm = !!q && q.purchasable && !!connection && !staleReason && !needsReconfirm && !createOrder.isPending && !quote.isFetching
 
   return (
-    <div className="container-kurio pt-8">
-      <Breadcrumb items={[{ label: 'Início', to: '/' }, { label: 'Mercado', to: '/', hash: 'catalogo' }, { label: 'Pagamento' }]} />
+    <div className="container-kurio pt-8 max-md:pb-32 max-md:pt-0">
+      <MobileTopBar title="Pagamento com carteira" fallback="/cart" className="pb-5 pt-[33px]" />
+      <Breadcrumb className="max-md:hidden" items={[{ label: 'Início', to: '/' }, { label: 'Mercado', to: '/', hash: 'catalogo' }, { label: 'Pagamento' }]} />
       <h1 className="sr-only">Pagamento</h1>
       {existingPending && (
         <p className="mt-4 border border-brand/50 bg-brand/10 p-3 text-sm" role="status">
@@ -281,8 +291,38 @@ export function CheckoutPage() {
           </Link>
         </p>
       )}
-      <form onSubmit={submit} noValidate className="mt-5 grid gap-10 lg:grid-cols-[minmax(0,1fr)_405px] lg:gap-8">
-        <section aria-labelledby="collector-title">
+      {/* No mobile a ordem segue o Figma: carteiras salvas, provedores, total, avisos e, por fim, os dados do colecionador e o resumo. */}
+      <form onSubmit={submit} noValidate className="mt-5 grid gap-10 max-md:mt-0 max-md:flex max-md:flex-col max-md:gap-6 lg:grid-cols-[minmax(0,1fr)_405px] lg:gap-8">
+        {!!wallets.data?.length && (
+          <section aria-labelledby="saved-wallets-title" className="order-1 md:hidden">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="saved-wallets-title" className="text-[15px] font-bold">
+                Carteira conectada
+              </h2>
+              <Link to="/wallets" className="text-sm font-bold text-brand-strong hover:underline">
+                Trocar carteira
+              </Link>
+            </div>
+            <div className="mt-3 space-y-5" role="radiogroup" aria-labelledby="saved-wallets-title">
+              {wallets.data.map((w) => (
+                <div key={w.id} className="relative">
+                  <label className="flex cursor-pointer items-start gap-4 rounded-xl bg-surface py-3.5 pl-4 pr-12">
+                    <input type="radio" name="saved-wallet" checked={!useOther && form.address === w.address} onChange={() => pickWallet(w)} className={`mt-6 size-4 shrink-0 accent-[var(--color-brand)] max-md:size-5 max-md:appearance-none max-md:rounded-full max-md:border-2 max-md:border-[#5a3a24] max-md:checked:border-brand max-md:checked:bg-[radial-gradient(circle,var(--color-brand)_38%,transparent_42%)]`} />
+                    <span className="min-w-0">
+                      <span className="block text-[15px] font-bold">{w.label}</span>
+                      <span className="block truncate text-sm text-muted">{w.ensName ?? shortAddress(w.address)}</span>
+                      <span className="block text-sm text-muted">Rede {w.network}</span>
+                    </span>
+                  </label>
+                  <Link to="/wallets" className="absolute right-3 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center text-brand-strong" aria-label={`Gerenciar carteira ${w.label}`}>
+                    <MoreVertical className="size-4" aria-hidden="true" />
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        <section aria-labelledby="collector-title" className="max-md:order-5 max-md:mt-4">
           <h2 id="collector-title" className="text-lg font-bold">
             Perfil do colecionador
           </h2>
@@ -377,7 +417,8 @@ export function CheckoutPage() {
           </Field>
         </section>
 
-        <aside aria-labelledby="order-title" className="h-fit">
+        <aside aria-labelledby="order-title" className="h-fit max-md:contents">
+          <div className="max-md:order-6">
           <h2 id="order-title" className="text-lg font-bold">
             Seus NFTs
           </h2>
@@ -425,6 +466,12 @@ export function CheckoutPage() {
                 <Totals subtotal={q.subtotal} discount={q.discount} networkFee={q.networkFee} total={q.total} couponLabel={q.coupon?.code} busy={quote.isFetching} feeNote={`Taxa estimada (${q.network})`} />
               </div>
 
+            </>
+          ) : null}
+          </div>
+
+          {q && (
+            <div className="max-md:order-4">
               {(staleReason || needsReconfirm) && (
                 <div role="alert" className="mt-4 space-y-3 border border-brand bg-brand/10 p-3 text-sm" data-testid="quote-stale">
                   <p className="flex gap-2 font-bold">
@@ -463,16 +510,25 @@ export function CheckoutPage() {
                   </li>
                 </ul>
               )}
-            </>
-          ) : null}
+            </div>
+          )}
 
-          <fieldset className="mt-5">
-            <legend className="w-full text-center text-lg font-bold">Carteira e rede</legend>
-            <WalletStrip className="mt-3" />
-            <div className="mt-3 space-y-3" role="radiogroup" aria-label="Tipo de carteira">
+          <fieldset className="mt-5 max-md:order-2 max-md:mt-0">
+            <legend className="w-full text-center text-lg font-bold max-md:text-left max-md:text-[15px]">Carteira e rede</legend>
+            <WalletStrip className="mt-3 max-md:hidden" />
+            <div className="mt-3 space-y-3 max-md:space-y-4" role="radiogroup" aria-label="Tipo de carteira">
               {WALLET_PROVIDERS.map((p) => (
-                <label key={p} className={cn('flex h-[46px] cursor-pointer items-center gap-3 rounded-[3px] border px-3 text-[15px]', form.provider === p ? 'border-brand' : 'border-line')}>
-                  <input type="radio" name="provider" value={p} checked={form.provider === p} onChange={() => set('provider', p)} className="size-4 accent-[var(--color-brand)]" />
+                <label
+                  key={p}
+                  className={cn(
+                    'flex h-[46px] cursor-pointer items-center gap-3 rounded-[3px] border px-3 text-[15px] max-md:h-16 max-md:rounded-xl max-md:border-0 max-md:bg-surface max-md:px-3.5 max-md:text-sm',
+                    form.provider === p ? 'border-brand' : 'border-line',
+                  )}
+                >
+                  <input type="radio" name="provider" value={p} checked={form.provider === p} onChange={() => set('provider', p)} className={`size-4 accent-[var(--color-brand)] max-md:order-last max-md:ml-auto max-md:size-5 max-md:appearance-none max-md:rounded-full max-md:border-2 max-md:border-[#5a3a24] max-md:checked:border-brand max-md:checked:bg-[radial-gradient(circle,var(--color-brand)_38%,transparent_42%)]`} />
+                  <span className="flex size-10 items-center justify-center rounded-full border border-line bg-[#2f1d15] text-xs font-bold text-brand-strong md:hidden" aria-hidden="true">
+                    {p === 'Coinbase Wallet' ? <WalletIcon className="size-4" /> : p[0]}
+                  </span>
                   {p}
                 </label>
               ))}
@@ -492,7 +548,7 @@ export function CheckoutPage() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full"
+                  className="w-full max-md:h-12 max-md:rounded-xl"
                   disabled={!form.provider || connect.isPending}
                   onClick={() => {
                     const e = validate(form)
@@ -515,10 +571,21 @@ export function CheckoutPage() {
             </div>
           </fieldset>
 
-          <div ref={errorRef} tabIndex={-1} className="mt-4 focus:outline-none">
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-32 bg-gradient-to-t from-bg via-bg to-transparent md:hidden" aria-hidden="true" />
+          <p className="order-3 flex justify-end gap-7 text-lg font-bold md:hidden">
+            <span>Total:</span>
+            <span className="text-brand-strong">{q ? `${q.total} ETH` : '—'}</span>
+          </p>
+          <div ref={errorRef} tabIndex={-1} className="mt-4 focus:outline-none max-md:order-4 max-md:mt-0 max-md:empty:hidden">
             <FormError message={orderError} />
           </div>
-          <Button type="submit" className="mt-4 h-[46px] w-full text-[15px]" disabled={!canConfirm} aria-disabled={!canConfirm} data-testid="confirm-purchase">
+          <Button
+            type="submit"
+            className="mt-4 h-[46px] w-full text-[15px] max-md:fixed max-md:inset-x-6 max-md:bottom-8 max-md:z-30 max-md:mt-0 max-md:h-[60px] max-md:w-auto max-md:rounded-full max-md:bg-gradient-to-r max-md:from-brand max-md:to-[#a8683b] max-md:shadow-[0_8px_24px_rgba(0,0,0,0.45)] max-md:disabled:opacity-100 max-md:disabled:from-[#5c3f28] max-md:disabled:to-[#45301f] max-md:disabled:text-text/60"
+            disabled={!canConfirm}
+            aria-disabled={!canConfirm}
+            data-testid="confirm-purchase"
+          >
             {createOrder.isPending ? (
               <>
                 <Loader2 className="animate-spin" aria-hidden="true" /> Processando pagamento…
@@ -527,7 +594,7 @@ export function CheckoutPage() {
               'Confirmar compra'
             )}
           </Button>
-          {!connection && <p className="mt-2 text-center text-xs text-muted">Conecte a carteira para habilitar a confirmação.</p>}
+          {!connection && <p className="mt-2 text-center text-xs text-muted max-md:order-4 max-md:-mt-3">Conecte a carteira para habilitar a confirmação.</p>}
         </aside>
       </form>
     </div>

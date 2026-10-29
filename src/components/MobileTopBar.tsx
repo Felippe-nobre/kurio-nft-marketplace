@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
  * botão circular de voltar, título opcional e ação opcional à direita.
  * Só aparece abaixo de 768 px; no desktop o cabeçalho do site continua.
  */
-export function MobileTopBar({ title, fallback = '/', action, overlay = false }: { title?: string; fallback?: '/' | '/cart'; action?: ReactNode; overlay?: boolean }) {
+export function MobileTopBar({ title, fallback = '/', action, overlay = false, className }: { title?: string; fallback?: '/' | '/cart'; action?: ReactNode; overlay?: boolean; className?: string }) {
   const router = useRouter()
   const navigate = useNavigate()
   const back = () => {
@@ -17,7 +17,7 @@ export function MobileTopBar({ title, fallback = '/', action, overlay = false }:
     else void navigate({ to: fallback })
   }
   return (
-    <div className={cn('flex items-center gap-4 md:hidden', overlay ? 'absolute inset-x-0 top-0 z-10 justify-between px-7 pt-5' : 'pb-4 pt-5')}>
+    <div className={cn('flex items-center gap-4 md:hidden', overlay ? 'absolute inset-x-0 top-0 z-10 justify-between px-7 pt-5' : 'pb-4 pt-5', className)}>
       <button
         type="button"
         onClick={back}
@@ -27,7 +27,7 @@ export function MobileTopBar({ title, fallback = '/', action, overlay = false }:
         <ChevronLeft className="size-5" aria-hidden="true" />
       </button>
       {title && <p className={cn('flex-1 truncate text-xl font-bold', !action && 'pr-[34px] text-center')}>{title}</p>}
-      {action}
+      {action && <div className={cn(!title && 'ml-auto')}>{action}</div>}
     </div>
   )
 }

@@ -22,10 +22,10 @@ export function Totals({
   feeNote?: string
 }) {
   return (
-    <dl className={cn('space-y-2 text-[15px] transition-opacity', busy && 'opacity-60')} aria-busy={busy} data-testid="totals">
+    <dl className={cn('space-y-2 text-[15px] transition-opacity max-md:space-y-3', busy && 'opacity-60')} aria-busy={busy} data-testid="totals">
       <div className="flex justify-between gap-4">
         <dt>Subtotal</dt>
-        <dd className="text-lg" data-testid="subtotal">
+        <dd className="text-lg max-md:text-[15px]" data-testid="subtotal">
           {subtotal} ETH
         </dd>
       </div>
@@ -35,12 +35,12 @@ export function Totals({
       </div>
       <div className="flex justify-between gap-4">
         <dt>Taxa de rede</dt>
-        <dd className="text-lg" data-testid="fee">
+        <dd className="text-lg max-md:text-[15px]" data-testid="fee">
           {networkFee} ETH
         </dd>
       </div>
-      <p className="text-right text-[11px] text-brand-strong">{feeNote}</p>
-      <div className="flex justify-between gap-4 border-t border-line pt-4 font-bold">
+      <p className="text-right text-[11px] text-brand-strong max-md:-mt-3">{feeNote}</p>
+      <div className="flex justify-between gap-4 border-t border-line pt-4 font-bold max-md:-mt-1 max-md:border-t-0 max-md:pt-0">
         <dt>Total</dt>
         <dd className="text-lg text-brand-strong" data-testid="total">
           {total} ETH
@@ -84,21 +84,21 @@ export function CouponForm({ applied, compact, children }: { applied: { code: st
 
   return (
     <form onSubmit={submit} noValidate>
-      <label htmlFor="coupon" className="mb-2 block text-sm font-bold">
+      <label htmlFor="coupon" className="mb-2 block text-sm font-bold max-md:sr-only">
         Código promocional
       </label>
-      <div className="flex">
+      <div className="flex max-md:relative">
         <input
           id="coupon"
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Digite o código promocional..."
-          className="field-input rounded-r-none"
+          className="field-input rounded-r-none max-md:h-[50px] max-md:rounded-full max-md:border-line max-md:bg-surface max-md:pl-4 max-md:pr-32 max-md:text-[13px]"
           aria-invalid={!!error || undefined}
           aria-describedby={error ? 'coupon-error' : undefined}
           autoComplete="off"
         />
-        <button type="submit" className="shrink-0 bg-brand px-4 text-sm font-bold text-primary-foreground disabled:opacity-60" disabled={apply.isPending}>
+        <button type="submit" className="shrink-0 bg-brand px-4 text-sm font-bold text-primary-foreground disabled:opacity-60 max-md:absolute max-md:inset-y-0 max-md:right-0 max-md:w-[120px] max-md:rounded-full max-md:bg-gradient-to-r max-md:from-[#8a5a34] max-md:to-brand max-md:text-[15px]" disabled={apply.isPending}>
           {apply.isPending ? 'Aplicando…' : 'Aplicar'}
         </button>
       </div>

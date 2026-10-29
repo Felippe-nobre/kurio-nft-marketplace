@@ -3,6 +3,7 @@ import { Trash2 } from 'lucide-react'
 import { useCart, useSetQuantity } from '@/hooks/useCart'
 import { useHighlights, useRelated } from '@/hooks/useCatalog'
 import { Breadcrumb } from '@/components/Breadcrumb'
+import { MobileTopBar } from '@/components/MobileTopBar'
 import { QuantityStepper } from '@/components/QuantityStepper'
 import { CouponForm, Totals } from '@/components/Summary'
 import { NftRail } from '@/components/NftRail'
@@ -10,6 +11,7 @@ import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useEffect } from 'react'
+import { cn } from '@/lib/utils'
 
 const MAX_PER_LINE = 10
 
@@ -23,10 +25,12 @@ export function CartPage() {
   useEffect(() => {
     document.title = 'Carrinho — Kurio'
   }, [])
+  const hasItems = !!cart.data?.items.length
 
   return (
-    <div className="container-kurio pt-8">
-      <Breadcrumb items={[{ label: 'Início', to: '/' }, { label: 'Mercado', to: '/', hash: 'catalogo' }, { label: 'Carrinho' }]} />
+    <div className={cn('container-kurio pt-8 max-md:pt-0', hasItems && 'max-md:pb-[360px]')}>
+      <MobileTopBar title="Carrinho de NFTs" fallback="/" className="pb-5 pt-[33px]" />
+      <Breadcrumb className="max-md:hidden" items={[{ label: 'Início', to: '/' }, { label: 'Mercado', to: '/', hash: 'catalogo' }, { label: 'Carrinho' }]} />
       <h1 className="sr-only">Carrinho</h1>
       {cart.isPending ? (
         <div className="mt-4 grid gap-10 lg:grid-cols-[1fr_330px] lg:gap-20" aria-busy="true" aria-label="Carregando carrinho" data-testid="cart-skeleton">
@@ -52,12 +56,12 @@ export function CartPage() {
           </Button>
         </div>
       ) : (
-        <div className="mt-1 grid gap-10 lg:grid-cols-[1fr_330px] lg:gap-20">
+        <div className="mt-1 grid gap-10 max-md:mt-0 lg:grid-cols-[1fr_330px] lg:gap-20">
           <section aria-labelledby="cart-items-title">
             <h2 id="cart-items-title" className="sr-only">
               Itens do carrinho
             </h2>
-            <table className="w-full border-separate border-spacing-y-3 text-left">
+            <table className="w-full border-separate border-spacing-y-3 text-left max-md:block">
               <caption className="sr-only">NFTs no carrinho com preço, quantidade e total</caption>
               <thead className="hidden md:table-header-group">
                 <tr className="text-[15px]">
@@ -78,15 +82,15 @@ export function CartPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="max-md:grid max-md:gap-5">
                 {cart.data.items.map((l) => {
                   const max = Math.min(MAX_PER_LINE, l.available)
                   const over = l.quantity > l.available
                   return (
-                    <tr key={`${l.nftId}-${l.editionId}`} className="bg-surface max-md:grid max-md:grid-cols-[70px_1fr_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:p-3" data-testid="cart-line">
-                      <td className="max-md:row-span-2 md:w-[45%]">
+                    <tr key={`${l.nftId}-${l.editionId}`} className="bg-surface max-md:relative max-md:grid max-md:min-h-[100px] max-md:grid-cols-[100px_1fr_auto] max-md:grid-rows-[auto_auto_1fr] max-md:gap-x-[9px] max-md:overflow-hidden max-md:rounded-xl max-md:pr-3" data-testid="cart-line">
+                      <td className="max-md:row-span-3 md:w-[45%]">
                         <div className="flex items-center gap-3">
-                          <img src={l.image} alt="" width={70} height={70} className="size-[70px] shrink-0 bg-surface-2 object-contain" />
+                          <img src={l.image} alt="" width={70} height={70} className="size-[70px] shrink-0 bg-surface-2 object-contain max-md:size-[100px] max-md:rounded-l-xl max-md:object-cover" />
                           <div className="max-md:hidden">
                             <Link to="/nft/$id" params={{ id: l.nftId }} className="font-bold hover:text-brand-strong">
                               {l.name}
@@ -97,36 +101,36 @@ export function CartPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="md:hidden">
-                        <Link to="/nft/$id" params={{ id: l.nftId }} className="font-bold">
+                      <td className="pt-3.5 md:hidden">
+                        <Link to="/nft/$id" params={{ id: l.nftId }} className="text-[15px] font-bold">
                           {l.name}
                         </Link>
-                        <p className="text-xs text-muted">Edição {l.editionLabel}</p>
+                        <p className="mt-0.5 text-sm text-muted">Edição: {l.editionLabel}</p>
                       </td>
-                      <td className="font-bold text-brand-strong max-md:col-start-3 max-md:row-start-1 max-md:text-right">
+                      <td className="font-bold text-brand-strong max-md:hidden">
                         <span className="md:hidden sr-only">Preço unitário: </span>
                         {l.unitPrice} ETH
                       </td>
-                      <td className="max-md:col-start-2">
-                        <QuantityStepper size="sm" label={`${l.name} (${l.editionLabel})`} value={l.quantity} min={1} max={Math.max(l.quantity, max)} onChange={(q) => setQty.mutate({ nftId: l.nftId, editionId: l.editionId, quantity: q })} />
+                      <td className="max-md:col-start-3 max-md:row-span-3 max-md:row-start-1 max-md:self-center">
+                        <QuantityStepper mobileRound size="sm" label={`${l.name} (${l.editionLabel})`} value={l.quantity} min={1} max={Math.max(l.quantity, max)} onChange={(q) => setQty.mutate({ nftId: l.nftId, editionId: l.editionId, quantity: q })} />
                         {over && (
                           <p className="mt-1 text-xs text-danger" role="alert">
                             {l.available === 0 ? 'Esgotado' : `Apenas ${l.available} disponível(is)`}
                           </p>
                         )}
                       </td>
-                      <td className="font-bold text-brand-strong max-md:col-start-3 max-md:text-right" data-testid="line-total">
+                      <td className="font-bold text-brand-strong max-md:col-start-2 max-md:row-start-3 max-md:self-end max-md:pb-3 max-md:text-lg" data-testid="line-total">
                         <span className="sr-only">Total da linha: </span>
                         {l.lineTotal} ETH
                       </td>
-                      <td className="text-right max-md:col-start-3">
+                      <td className="text-right max-md:absolute max-md:right-1 max-md:top-1">
                         <button
                           type="button"
-                          className="inline-flex size-9 items-center justify-center text-muted hover:text-danger"
+                          className="inline-flex size-9 items-center justify-center text-muted hover:text-danger max-md:size-7"
                           aria-label={`Remover ${l.name} (${l.editionLabel}) do carrinho`}
                           onClick={() => setQty.mutate({ nftId: l.nftId, editionId: l.editionId, quantity: 0 })}
                         >
-                          <Trash2 className="size-5" aria-hidden="true" />
+                          <Trash2 className="size-5 max-md:size-4" aria-hidden="true" />
                         </button>
                       </td>
                     </tr>
@@ -136,20 +140,20 @@ export function CartPage() {
             </table>
           </section>
 
-          <aside aria-labelledby="summary-title" className="h-fit">
-            <h2 id="summary-title" className="border-b border-line pb-3 text-lg font-bold">
+          <aside aria-labelledby="summary-title" className="h-fit max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:z-30 max-md:rounded-t-[28px] max-md:bg-surface max-md:px-6 max-md:pb-9 max-md:pt-6 max-md:shadow-[0_-8px_24px_rgba(0,0,0,0.35)]">
+            <h2 id="summary-title" className="border-b border-line pb-3 text-lg font-bold max-md:sr-only">
               Resumo da carteira
             </h2>
-            <div className="mt-6">
+            <div className="mt-6 max-md:mt-0">
               <CouponForm applied={cart.data.coupon} />
             </div>
-            <div className="mt-6">
+            <div className="mt-6 max-md:mt-3">
               <Totals subtotal={cart.data.subtotal} discount={cart.data.discount} networkFee={cart.data.networkFee} total={cart.data.total} couponLabel={cart.data.coupon?.code} busy={setQty.isPending || cart.isFetching} />
             </div>
-            <Button asChild className="mt-6 w-full">
+            <Button asChild className="mt-6 w-full max-md:mt-5 max-md:h-[60px] max-md:rounded-full max-md:bg-gradient-to-r max-md:from-brand max-md:to-[#a8683b] max-md:text-[15px]">
               <Link to="/checkout">Conectar e finalizar</Link>
             </Button>
-            <Link to="/" hash="catalogo" className="mt-3 block text-center text-sm text-brand-strong hover:underline">
+            <Link to="/" hash="catalogo" className="mt-3 block text-center text-sm text-brand-strong hover:underline max-md:hidden">
               Continuar explorando
             </Link>
           </aside>

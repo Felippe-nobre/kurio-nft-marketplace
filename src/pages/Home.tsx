@@ -175,15 +175,15 @@ function MobileHero() {
   const thumb = slides[(slide + 1) % Math.max(slides.length, 1)]?.image ?? '/img/art/sage-nomad.webp'
   return (
     <section aria-labelledby="hero-title-mobile" className="container-kurio mt-4 md:hidden">
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#6a4529] via-[#523520] to-[#3a2516] px-4 pb-7 pt-2.5">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#6a4529] via-[#523520] to-[#3a2516] px-4 pb-6 pt-2.5">
         <span className="pointer-events-none absolute -left-16 top-8 size-60 rounded-full bg-[#7a5232]/40" aria-hidden="true" />
         <div className="relative grid grid-cols-[minmax(0,1fr)_138px] gap-2">
           <div className="min-w-0">
             <p className="text-xs font-bold">Bem-vindo à Kurio</p>
-            <h1 id="hero-title-mobile" className="mt-1.5 text-lg font-bold uppercase leading-[29px]">
+            <h1 id="hero-title-mobile" className="mt-1 text-lg font-bold uppercase leading-[29px]">
               Seja dono da cultura digital
             </h1>
-            <p className="mt-1.5 text-xs leading-[18px] text-muted">Descubra NFTs selecionados de criadores do mundo todo.</p>
+            <p className="mt-1 text-xs leading-[18px] text-muted">Descubra NFTs selecionados de criadores do mundo todo.</p>
             <Link to="/" hash="catalogo" className="inline-flex items-center gap-2 text-xs font-bold uppercase leading-4 text-brand-strong">
               Explorar <ArrowRight className="size-3.5" aria-hidden="true" />
             </Link>

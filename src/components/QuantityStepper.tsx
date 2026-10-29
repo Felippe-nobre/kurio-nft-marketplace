@@ -10,6 +10,7 @@ export function QuantityStepper({
   label,
   size = 'md',
   disabled,
+  mobileRound,
 }: {
   value: number
   min?: number
@@ -18,8 +19,10 @@ export function QuantityStepper({
   label: string
   size?: 'sm' | 'md'
   disabled?: boolean
+  /** Figma mobile (carrinho): botões circulares escuros de 24px abaixo de 768px. */
+  mobileRound?: boolean
 }) {
-  const btn = cn('flex items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40', size === 'md' ? 'h-9 w-6 rounded-[12px]' : 'size-5 rounded-[6px]')
+  const btn = cn('flex items-center justify-center rounded-full bg-brand text-primary-foreground disabled:opacity-40', size === 'md' ? 'h-9 w-6 rounded-[12px]' : 'size-5 rounded-[6px]', mobileRound && 'max-md:size-6 max-md:rounded-full max-md:bg-[#3a2416] max-md:text-text max-md:disabled:opacity-50')
   return (
     <div className="flex items-center gap-2" role="group" aria-label={label}>
       <button type="button" className={btn} onClick={() => onChange(value - 1)} disabled={disabled || value <= min} aria-label={`Diminuir quantidade de ${label}`}>
