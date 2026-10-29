@@ -16,6 +16,8 @@ React 18 + TypeScript (Vite)
 
 Nenhuma resposta fictícia vive em componentes, hooks ou no cliente Axios: tudo passa por `src/api/endpoints.ts` → Axios → MSW. Os controles de cenário (`window.__kurio`, painel `?dev=1`) agem sobre o *servidor* simulado; a UI só muda pelo caminho normal (REST ou evento Socket.IO).
 
+Único ponto de contato entre o cliente e o cenário: quando os mocks estão ativos, o interceptor do Axios usa o `clientTimeoutMs` do cenário como timeout (padrão 8 s), para que os testes de timeout rodem rápido. É uma configuração de transporte; não altera respostas nem regras de negócio, e não existe no build sem mocks.
+
 ## Estrutura
 
 | Pasta | Conteúdo |
@@ -27,8 +29,9 @@ Nenhuma resposta fictícia vive em componentes, hooks ou no cliente Axios: tudo 
 | `src/components` | componentes de UI (shadcn/ui em `ui/`), layout, cards, formulários |
 | `src/pages` | telas (Início, Detalhe, Carrinho, Pagamento, Pedido, Login/Cadastro, Perfil, Carteiras, Favoritos, Atividade) |
 | `src/mocks` | banco simulado, fixtures, regras de negócio, handlers, servidor Socket.IO, cenários |
-| `e2e` | Playwright (12 grupos + regressão visual) |
-| `scripts/lighthouse.mjs` | auditoria Lighthouse (3 execuções, mediana) |
+| `e2e` | Playwright (12 grupos do briefing, grupo 13 complementar e regressão visual) |
+| `scripts/lighthouse.mjs` | configuração e execução da auditoria Lighthouse (3 execuções, mediana) |
+| `scripts/check-routes.cjs` | acesso direto + refresh de todas as rotas em 390/768/1440 px (local ou URL publicada) |
 
 ## Contratos REST
 
@@ -42,7 +45,7 @@ Base: `VITE_API_BASE_URL` (padrão `/api`). Erros: `{ code, message, fields?, de
 | `POST /auth/register` · `/auth/login` · `/auth/logout` | sessão (token opaco + `expiresAt`) | 409 `EMAIL_TAKEN`/`USERNAME_TAKEN`, 422, 401 `INVALID_CREDENTIALS` |
 | `GET /session` | recupera a sessão após refresh | 401 `SESSION_EXPIRED` |
 | `GET/PATCH /profile` · `POST/DELETE /profile/avatar` · `POST /profile/password` | perfil, avatar (multipart), senha | 409, 413, 415, 422 |
-| `GET/POST /wallets` · `PATCH/DELETE /wallets/:id` | carteiras principal/secundárias | 409, 422 |
+| `GET/POST /wallets` · `PATCH/DELETE /wallets/:id` | carteiras principal/secundárias; o `PATCH` aceita `role: 'primary'` (troca a principal) e `label` (edição do apelido) | 404, 409, 422 |
 | `GET /favorites` · `PUT/DELETE /favorites/:id` | favoritos | 401 |
 | `GET /cart` · `PUT /cart/items` · `DELETE /cart/items/:nftId/:editionId` | carrinho do visitante (`X-Guest-Id`) ou do usuário | 409 `OUT_OF_STOCK` |
 | `PUT/DELETE /cart/coupon` · `POST /coupons/validate` | cupom | 422 `COUPON_INVALID`/`COUPON_EXPIRED` |
@@ -99,6 +102,7 @@ Regras do cliente (`EventGate`):
 - No login: `POST /cart/merge` soma as quantidades do visitante às do usuário, limitadas ao estoque e ao máximo por linha (10). O cupom do visitante é preservado se o usuário não tiver um.
 - A alteração de quantidade é **otimista com rollback**: atualiza linhas e contagem na hora e desfaz se o servidor recusar (ex.: acima do estoque). Os totais monetários sempre vêm do servidor.
 - Quantidade máxima por linha = `min(10, disponível)`.
+- Com o carrinho aberto, um `nft.updated` de um item invalida o carrinho (os valores são recalculados no servidor) e a tela mostra um aviso visível ("O preço ou a disponibilidade de X mudou…"), também anunciado na região `aria-live`.
 
 ## Pedido, idempotência e consistência
 
@@ -148,9 +152,56 @@ Dados determinísticos: PRNG com seed fixa gera 36 NFTs (9 do Figma e 27 complem
 - Login e Cadastro são diálogos sobre a página inicial, como no Figma, mas com rotas próprias (`/login`, `/cadastro`) para deep-link e retorno.
 - O Figma não traz campo de busca no catálogo, mas o requisito pede. Foi adicionado um campo discreto acima da grade, além da lupa do cabeçalho.
 - Filtros viram drawer (Sheet) abaixo de 1024 px. O menu principal vira drawer abaixo de 768 px.
-- Os skeletons têm as mesmas dimensões do conteúdo final, para evitar CLS. O shimmer é desligado com `prefers-reduced-motion`.
+- Os skeletons têm as mesmas dimensões do conteúdo final, para evitar CLS. O do detalhe do NFT replica a grade e as alturas reais em cada largura (medidas de 390 a 1440 px), incluindo o bloco de abas. O shimmer é desligado com `prefers-reduced-motion`.
 - Feedback acessível: região `aria-live` global para mutations e eventos em tempo real, toasts visuais e erros associados aos campos (`aria-invalid` + `aria-describedby`), com foco no primeiro campo inválido.
 - O status nunca é comunicado só por cor: há textos ("Esgotado", "Principal", "Pendente") e ícones.
 - Itens do Figma sem backend na proposta (login social, recuperação de senha, "Ofertas", "Arquivos baixados", "Suporte", redes sociais) aparecem desabilitados ou com aviso explícito de indisponibilidade. Nenhum deles simula sucesso.
 - "Código de indicação" aparece como obrigatório no Figma, mas foi tratado como opcional, porque não há regra de negócio associada.
 - "Ver no Etherscan" informa que a transação é simulada em vez de abrir um link inexistente.
+
+## Desvios do Figma
+
+Desktop:
+- Campo de busca acima da grade do catálogo (o Figma não traz; o briefing exige busca).
+- "Código de indicação" tratado como opcional (sem regra de negócio).
+- Login social, recuperação de senha e itens de menu sem escopo aparecem com aviso de indisponibilidade, sem simular sucesso.
+
+Mobile (abaixo de 768 px; o desktop não muda):
+- Cabeçalho do site e breadcrumb ficam ocultos nas 6 telas com frame mobile; Detalhes, Carrinho e Pagamento usam a barra superior com botão de voltar; o Início tem a barra de navegação inferior do Figma.
+- **Pagamento:** o botão "Conectar MetaMask" e o formulário do colecionador continuam, abaixo do Total. São requisitos funcionais (conexão, recusa e desconexão da carteira; dados validados) que o frame mobile não mostra.
+- **Detalhes:** a linha "Compartilhar este NFT" continua; "x de y disponíveis" fica só para leitor de tela (o esgotado continua visível no botão e nas edições).
+- **Ordenação:** fica dentro do painel de filtros (o frame mobile não mostra ordenação).
+- **Avisos (toasts):** no topo da tela, para não cobrir as barras de ação fixas ("Comprar NFT", "Conectar e finalizar", "Confirmar compra").
+- Os dados simulados não foram moldados ao frame (ex.: nota 4.2 em vez de 4.8, "Kurio Editions" em vez de "Kurio Apes").
+- Perfil, Carteiras, Atividade e Confirmação não têm frame mobile: seguem o mesmo padrão visual, com o menu da conta rolável na horizontal.
+
+## Assets
+
+- Artes oficiais exportadas do Figma em `public/img/nft/*.png` (preservadas sem alteração) e convertidas para `public/img/art/*.webp` (mesmas imagens, formato mais leve) para uso na interface. Os SVGs de `public/img/*.svg` já vinham no pacote e são usados nas galerias.
+- `public/img/ref-inicio.png` é a referência do Início desktop; é mantida no repositório, mas não é carregada pelo app.
+- Fonte Roboto Mono servida localmente via `@fontsource/roboto-mono` (400/500/700); nenhuma dependência de CDN em tempo de execução.
+- Ajustes de acessibilidade em relação ao layout: textos alternativos nas artes, rótulos acessíveis em botões só com ícone, estados com texto além da cor ("Esgotado", "Principal", "Pendente"), foco visível em todos os controles.
+
+## Performance
+
+Medições oficiais em `lighthouse/RESULTS.md` (medianas de 3 execuções por página e perfil, build de demonstração, cenário padrão dos mocks). O desktop atinge todas as metas; no mobile, Accessibility, Best Practices e SEO atingem as metas, mas **Performance fica abaixo de 90**.
+
+O que já foi feito:
+- Build com chunks separados (React, TanStack, rotas sob demanda), artes em WebP, `preload` com `fetchpriority="high"` da arte do hero, imagens com `width`/`height`, `loading="lazy"` abaixo da dobra.
+- `modulepreload` do chunk de mocks no HTML do build com MSW (plugin em `vite.config.ts`): o download deixa de esperar a execução do JS principal. Mobile, Lighthouse 13: Início 66 → 67 e Detalhe 65 → 69 (LCP −220 ms e −400 ms).
+- Esqueletos com as mesmas dimensões do conteúdo: CLS 0 em todas as medições (o do detalhe desktop era 0,083).
+
+Causa identificada do resultado mobile (evidências nos relatórios JSON de `lighthouse/reports/`):
+- FCP (0,9 s), Speed Index e CLS têm nota máxima. As métricas abaixo da meta são **TBT** (~830–900 ms) e **LCP** (~3,6–3,9 s).
+- O chunk do MSW e do servidor simulado (`browser-*.js`) responde por 47% (Início) e 63% (Detalhe) de todo o tempo de script no perfil mobile (CPU 4× mais lenta), e por 8 a 11 das 18 a 20 tarefas longas. O MSW executa os handlers na thread principal da página, e cada requisição simulada passa pelo casamento de rotas, pela latência simulada e pelas regras do servidor.
+- O elemento de LCP é uma arte que depende da resposta da API simulada (catálogo no Início, detalhe no NFT), que no cenário padrão tem latência de 150–600 ms.
+- Um perfil de CPU do carregamento não mostrou um gargalo único removível no código do app: o custo se divide entre a renderização do React, o MSW e o layout inicial.
+
+Por que não foi "corrigido" de outra forma: as alternativas que melhorariam a nota (desligar os mocks, reduzir a latência, pré-renderizar dados fixos ou pré-carregar artes que dependem da API) mudariam o cenário auditado ou simplificariam a entrega só para a pontuação, o que o briefing não permite. Com uma API real (`VITE_ENABLE_MOCKS=false`) esse código não é carregado, mas não há backend real para medir.
+
+## Limitações
+
+- O backend é simulado no navegador: dados ficam no `localStorage` de cada navegador, abas não compartilham eventos em tempo real, e não há persistência entre dispositivos.
+- Os testes rodam apenas em Chromium (desktop 1440 px e mobile 390 px). As baselines visuais foram geradas em Linux.
+- A comparação visual com o Figma cobriu o Início desktop e as 6 telas mobile enviadas (`docs/figma-mobile/`); as demais telas seguem o padrão visual sem comparação pixel a pixel.
+- As medições de Lighthouse dependem da máquina (índice de benchmark registrado em cada relatório JSON); compare versões sempre na mesma máquina.
