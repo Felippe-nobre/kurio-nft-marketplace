@@ -17,14 +17,18 @@ import lighthouse from 'lighthouse'
 import * as chromeLauncher from 'chrome-launcher'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
-const outDir = path.join(root, 'lighthouse', 'reports')
 const BASE = process.env.LH_BASE_URL ?? 'http://localhost:4173'
 const RUNS = Number(process.env.LH_RUNS ?? 3)
-const PAGES = [
+const ALL_PAGES = [
   { id: 'inicio', path: '/' },
   { id: 'detalhe', path: '/nft/1' },
 ]
-const PROFILES = ['mobile', 'desktop']
+// Filtros opcionais para diagnóstico (ex.: LH_PROFILES=mobile LH_PAGES=inicio). O padrão é tudo.
+const PAGES = process.env.LH_PAGES ? ALL_PAGES.filter((p) => process.env.LH_PAGES.split(',').includes(p.id)) : ALL_PAGES
+const PROFILES = process.env.LH_PROFILES ? process.env.LH_PROFILES.split(',') : ['mobile', 'desktop']
+const PARTIAL = !!(process.env.LH_PAGES || process.env.LH_PROFILES || process.env.LH_RUNS)
+// Execuções parciais (diagnóstico) não substituem os relatórios oficiais da entrega.
+const outDir = path.join(root, 'lighthouse', PARTIAL ? 'diagnostics' : 'reports')
 const TARGETS = { performance: 90, accessibility: 95, 'best-practices': 95, seo: 90 }
 
 async function chromePath() {
@@ -120,6 +124,11 @@ async function main() {
     conditions: 'Build de demonstração (vite build --mode demo, MSW ligado), vite preview local, Chrome headless; mobile = throttling padrão do Lighthouse (Moto G Power, 4G lento simulado); desktop = desktop-config.',
     targets: TARGETS,
     results,
+  }
+  if (PARTIAL) {
+    console.log('\nExecução parcial (diagnóstico): relatórios em lighthouse/diagnostics/; summary.json e RESULTS.md não foram alterados.')
+    for (const r of results) console.log(`${r.page} ${r.profile} mediana: ${JSON.stringify(r.median)}`)
+    return
   }
   await writeFile(path.join(root, 'lighthouse', 'summary.json'), JSON.stringify(summary, null, 2))
   const ok = (v, t) => (v >= t ? `${v} ✅` : `${v} ⚠️`)

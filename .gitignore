@@ -7,3 +7,4 @@ lighthouse/reports/*.tmp
 .env
 .env.local
 .env.*.local
+lighthouse/diagnostics/
