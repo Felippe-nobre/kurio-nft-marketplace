@@ -389,7 +389,8 @@ function Catalog({
             ) : isPending ? (
               <ul className={cn('grid grid-cols-2 gap-x-4 gap-y-10 sm:gap-x-8 xl:grid-cols-3', MOBILE_GRID)} aria-label="Carregando NFTs" data-testid="catalog-skeleton">
                 {Array.from({ length: 9 }, (_, i) => (
-                  <li key={i}>
+                  // Chave própria: com `i` o React reaproveitaria estes <li> como os cards reais (ids "1", "2"…) e a grade "pularia".
+                  <li key={`skeleton-${i}`}>
                     <NftCardSkeleton />
                   </li>
                 ))}

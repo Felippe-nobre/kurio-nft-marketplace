@@ -4,7 +4,7 @@ test.describe('3. Cadastro, login, expiração, logout e troca de usuário', () 
   test('cadastro com validação, conflito e sucesso @mobile', async ({ app: page }) => {
     await open(page, '/cadastro')
     const dialog = page.getByRole('dialog')
-    await dialog.getByRole('button', { name: 'Criar conta' }).click()
+    await dialog.getByRole('button', { name: /^Criar (conta|perfil)$/ }).click()
     await expect(dialog.getByLabel('Nome de usuário')).toHaveAttribute('aria-invalid', 'true')
     await expect(dialog.getByText('Informe um e-mail válido.')).toBeVisible()
     await expect(dialog.getByLabel('Nome de usuário')).toBeFocused()
@@ -13,11 +13,11 @@ test.describe('3. Cadastro, login, expiração, logout e troca de usuário', () 
     await dialog.getByLabel('E-mail').fill(USERS.ana.email) // conflito
     await dialog.getByLabel('Senha', { exact: true }).fill('senha-forte-1')
     await dialog.getByLabel('Confirmar senha').fill('senha-forte-1')
-    await dialog.getByRole('button', { name: 'Criar conta' }).click()
+    await dialog.getByRole('button', { name: /^Criar (conta|perfil)$/ }).click()
     await expect(dialog.getByText('Este e-mail já está cadastrado.')).toBeVisible()
 
     await dialog.getByLabel('E-mail').fill('novo@kurio.test')
-    await dialog.getByRole('button', { name: 'Criar conta' }).click()
+    await dialog.getByRole('button', { name: /^Criar (conta|perfil)$/ }).click()
     await expect(page.getByRole('link', { name: /Minha conta \(novo.colecionador\)/ })).toBeVisible()
   })
 

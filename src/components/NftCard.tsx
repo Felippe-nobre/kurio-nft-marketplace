@@ -102,8 +102,9 @@ export function NftCardSkeleton() {
   return (
     <div aria-hidden="true">
       <Skeleton className="aspect-[258/300] w-full rounded-none max-md:aspect-[175/199] max-md:rounded-2xl" />
-      <Skeleton className="mt-5 h-5 w-3/4" />
-      <Skeleton className="mt-2 h-6 w-1/3" />
+      {/* Mobile: mesma altura do card real (nome e preço de 20px) para não deslocar a grade ao carregar. */}
+      <Skeleton className="mt-5 h-5 w-3/4 max-md:mt-2.5" />
+      <Skeleton className="mt-2 h-6 w-1/3 max-md:mt-0 max-md:h-5" />
     </div>
   )
 }

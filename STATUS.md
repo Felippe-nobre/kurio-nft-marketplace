@@ -1,6 +1,41 @@
 # Status da entrega
 
-Atualizado em 28/10/2026. Todos os resultados abaixo vêm de comandos **executados de fato** neste ambiente (Linux x64, Node 22.23.4, npm 10.9.9, Chromium do Playwright 153 headless). Nada foi marcado como aprovado sem execução.
+Atualizado em 28/10/2026 (noite), após o ajuste do mobile às telas do Figma. Todos os resultados abaixo vêm de comandos **executados de fato** neste ambiente (Linux x64, 2 CPUs, Node 22.23.4, npm 10.9.9, Chromium do Playwright 153 headless). Nada foi marcado como aprovado sem execução.
+
+## Ajuste do mobile ao Figma (rodada mais recente)
+
+Referências: 6 telas **mobile** exportadas do Figma (414×896, primeira dobra): Início, Detalhes do NFT, Carrinho de NFTs, Pagamento, Login e Cadastro. A comparação lado a lado final está em `docs/figma-mobile/comparacao-figma-x-app.png` (Figma à esquerda, app à direita em cada par). Os scripts de captura e medição estão na mesma pasta.
+
+Regra seguida: **só abaixo de 768 px** (`max-md:` / `md:hidden`). O desktop não mudou: as 4 baselines visuais do desktop passaram **sem atualização** depois das mudanças, e o git confirma que estão intactas.
+
+| Tela | O que foi ajustado ao Figma |
+|---|---|
+| Todas | Margem lateral de 24 px; cabeçalho do site e breadcrumb ocultos no mobile nas 6 telas; avisos (toasts) no topo, para não cobrirem as barras fixas |
+| Início | Busca "Explorar coleções" + botão de filtros; hero compacto em card (texto mobile do Figma, arte + miniatura, pontos); abas em uma linha; grade de 2 colunas escalonada; cards arredondados com arte quadrada e favorito no canto; barra de navegação inferior (Início, Favoritos, botão central de busca, Carrinho, Conta) |
+| Detalhes | Barra com voltar e favorito; arte arredondada (as miniaturas da galeria viram pontos sobre a arte; tocar amplia); painel inferior arredondado com selo "★ nota (avaliações)"; descrição curta do Figma; barra fixa com Qtd., preço, "Comprar NFT" (pílula em gradiente) e botão circular de carrinho, que adiciona sem sair da página |
+| Carrinho | Barra "Carrinho de NFTs" com voltar; itens em cards (arte colada à esquerda, "Edição: x", total da linha em destaque, botões circulares, remover no canto); painel inferior fixo com cupom em pílula, totais e "Conectar e finalizar" |
+| Pagamento | Barra "Pagamento com carteira"; "Carteira conectada" com as carteiras salvas em cards (selecionar = mesmo efeito do seletor de endereço; "Trocar carteira" e ⋮ levam a Carteiras); "Carteira e rede" com provedores em cards com ícone; Total; "Confirmar compra" fixo embaixo |
+| Login / Cadastro | Tela cheia com a marca "KURIO", título sem abas, campos de 50 px, botão de 60 px, ícones Google/Facebook, link de troca no rodapé; botão "Criar perfil" (texto do Figma) |
+
+Diferenças que **ficaram de propósito**, por função ou por dados:
+
+- **Pagamento:** o botão "Conectar MetaMask" e o formulário do colecionador continuam (requisitos funcionais: conexão/recusa da carteira e dados validados). O formulário fica abaixo do Total.
+- **Detalhes:** a linha "Compartilhar este NFT" continua visível. A frase "x de y disponíveis" passa a ser só para leitor de tela no mobile; o esgotado continua visível no botão e nas edições.
+- **"Ordenar por":** no mobile fica dentro do painel de filtros (o Figma não mostra ordenação).
+- **Dados simulados não foram alterados:** nota 4.2 contra 4.8, "Kurio Editions" contra "Kurio Apes", edição 1/1 em vez da "1/10" repetida do Figma, quantidade de carteiras salvas da usuária de teste.
+- **Telas sem referência mobile não mudaram:** destaque, diário e rodapé da página inicial; perfil, carteiras, atividade e pedido.
+
+Bugs encontrados e corrigidos durante o ajuste:
+
+- **Avisos bloqueando botões:** o aviso "adicionado ao carrinho" ficava em cima do botão fixo "Conectar e finalizar" e bloqueava o toque. O teste 9 falhou por isso numa execução; os avisos agora ficam no topo no mobile.
+- **Grade "pulando" ao carregar (CLS 0,155 no Início mobile):** o esqueleto tinha altura diferente do card real, e o React reaproveitava os itens do esqueleto como cards, porque as chaves `0, 1, 2…` coincidiam com os ids `"1", "2"…`. Corrigido; medido com `PerformanceObserver` a 412 px e CPU 4× mais lenta: **nenhum deslocamento**.
+
+Testes ajustados ao novo comportamento mobile (sem perder cobertura):
+
+- `01-catalog`: no mobile, a ordenação é feita pelo painel de filtros.
+- `03-auth`: o botão aceita "Criar conta" (desktop) ou "Criar perfil" (mobile).
+- `fixtures.fillCheckoutAndConnect`: o seletor de rede passou a ser o `combobox` "Rede", porque os cards de carteira também contêm o texto "Rede …".
+
 
 ## Resumo
 
@@ -11,11 +46,12 @@ Atualizado em 28/10/2026. Todos os resultados abaixo vêm de comandos **executad
 | Lint | `npm run lint` | ✅ sem erros nem avisos |
 | Build produção | `npm run build` | ✅ |
 | Build demo | `npm run build:demo` | ✅ |
-| E2E Playwright | `npm run test:e2e` | ✅ **59/59** (51 funcionais + 8 visuais), em 3 execuções completas consecutivas sobre o código final, sem falhas nem *flaky* |
-| Regressão visual | parte do E2E | ✅ 8 baselines (Início, Detalhe, Carrinho, Pagamento × desktop 1440 / mobile 390) geradas e confirmadas em execuções seguintes |
-| Lighthouse | `npm run lighthouse` | ⚠️ executado; **desktop atinge todas as metas, mobile fica abaixo da meta de Performance (89 e 83)**. Ver abaixo |
+| E2E Playwright | `npm run test:e2e` | ✅ **59/59** (51 funcionais + 8 visuais) na execução completa sobre o código final. Antes disso, 2 execuções completas seguidas com 59/59 (após a correção dos avisos); só o esqueleto do catálogo mudou depois delas |
+| Regressão visual | parte do E2E | ✅ 8 baselines (Início, Detalhe, Carrinho, Pagamento × desktop 1440 / mobile 390). As 4 do desktop **não foram regeradas** (passaram sem mudança); as 4 do mobile foram regeradas com o visual do Figma |
+| Lighthouse | `npm run lighthouse` | ⚠️ executado; **desktop atinge todas as metas; mobile fica abaixo da meta de Performance**. A máquina ficou ~40% mais lenta entre as rodadas, então comparei antes × depois na mesma máquina. Ver abaixo |
 | Auditoria | `npm audit --omit=dev` | ✅ 0 vulnerabilidades nas dependências de produção (há avisos em dependências de desenvolvimento: lighthouse, esbuild/vite 5) |
-| Imagens originais | SHA-256 antes × depois | ✅ os 19 arquivos de `public/img/` estão idênticos ao pacote recebido |
+| Imagens originais | SHA-256 / `git diff` | ✅ os 19 arquivos de `public/img/` estão idênticos ao pacote recebido |
+| Rolagem horizontal | script em `docs/figma-mobile/capture.cjs` | ✅ nenhuma em 360, 390, 414, 768 e 1440 px nas rotas `/`, `/nft/1`, `/cart`, `/checkout`, `/login`, `/cadastro` e `/profile` (logado) |
 
 ## Playwright: o que roda
 
@@ -29,20 +65,30 @@ As baselines visuais foram geradas neste Linux. Em outro SO, rode `npm run test:
 
 ## Lighthouse (medianas de 3 execuções)
 
-Build demo + `vite preview` local, Chrome headless, Lighthouse 12.8.2. Mobile com throttling padrão (Moto G Power, 4G lento simulado). Relatórios completos em `lighthouse/reports/`, medianas em `lighthouse/RESULTS.md` e `lighthouse/summary.json`.
+Build demo + `vite preview` local, Chrome headless, Lighthouse 12.8.2. Mobile com throttling padrão (Moto G Power, 4G lento simulado). Relatórios da versão atual em `lighthouse/reports/`, medianas em `lighthouse/RESULTS.md` e `lighthouse/summary.json`.
 
-| Página | Perfil | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
-|---|---|---|---|---|---|---|---|---|
-| Início | mobile | **89** ⚠️ | 97 | 100 | 100 | 2,9 s | 0 | 165 ms |
-| Detalhe | mobile | **83** ⚠️ | 97 | 100 | 100 | 3,6 s | 0 | 171 ms |
-| Início | desktop | 97 | 100 | 100 | 100 | 1,0 s | 0,04 | 10 ms |
-| Detalhe | desktop | 97 | 97 | 100 | 100 | 0,9 s | 0,083 | 0 ms |
+**Atenção à máquina:** entre a rodada anterior e esta, o ambiente ficou mais lento (o *benchmarkIndex* do Lighthouse caiu de ~2.600 para ~1.600). Por isso, a comparação válida é entre versões medidas **na mesma máquina, uma após a outra**:
 
-Metas: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95, SEO ≥ 90.
+| Página | Perfil | Antes do ajuste mobile (`8ecc61a`) | Versão final | LCP antes → final | CLS final | TBT final |
+|---|---|---|---|---|---|---|
+| Início | mobile | 76 | **67** ⚠️ | 3,1 s → 3,9 s | 0 | 658 ms |
+| Detalhe | mobile | 67 | **68** ⚠️ | 3,7 s → 3,8 s | 0 | 629 ms |
+| Início | desktop | 95 | 93 ✅ | 1,2 s → 1,5 s | 0 | 24 ms |
+| Detalhe | desktop | 97 | 96 ✅ | 1,0 s → 1,1 s | 0,083 | 6 ms |
 
-**Por que o mobile não chega a 90:** o LCP mobile é quase todo *render delay* (~3,1 s; TTFB ~0,5 s, download da imagem ~0). Na build de demonstração, o "backend" (MSW + dados simulados, chunk de ~338 kB) precisa ser baixado, avaliado e registrar o Service Worker antes da primeira requisição de dados; com a CPU 4× mais lenta do perfil mobile isso custa ~1,4 s de *bootup*. Testei iniciar o MSW em paralelo à primeira renderização (só HTTP/Socket.IO aguardando o mock): **não houve ganho mensurável** (88/81 no mobile), então a mudança foi revertida. Uma build sem mocks (API real, `VITE_ENABLE_MOCKS=false`) não carrega esse chunk, mas não pôde ser medida aqui por não haver backend real.
+Accessibility 97–100, Best Practices 100 e SEO 100 em todos os casos. Metas: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95, SEO ≥ 90.
 
-## Correções feitas nesta rodada
+Na máquina anterior (mais rápida), a versão `8ecc61a` media 89/83 no mobile e 97/97 no desktop. Esses números não são comparáveis com os de agora.
+
+**Por que o Início mobile caiu de 76 para 67:**
+- No layout do Figma, o hero mobile tem uma arte pequena (138 px). O maior elemento da tela (LCP) passou a ser a primeira arte do catálogo (166 px).
+- Essa arte só aparece depois da resposta da API, que na demonstração tem latência simulada de 150 a 600 ms (cenário "realistic", de propósito).
+- No layout antigo, o LCP era a arte grande e estática do hero, pintada sem esperar a API.
+- Não apliquei truques só para melhorar a nota (por exemplo, pré-carregar a arte de um item que depende da API).
+
+**Por que nenhuma página mobile chega a 90:** o *render delay* domina o LCP. A build de demonstração precisa baixar e iniciar o MSW (o "backend" simulado, ~338 kB) antes da primeira requisição de dados, o que pesa com a CPU 4× mais lenta do perfil mobile. Iniciar o MSW em paralelo à renderização já foi testado antes, sem ganho. Uma build com API real (`VITE_ENABLE_MOCKS=false`) não carrega esse código, mas não pôde ser medida aqui por falta de backend.
+
+## Correções da rodada anterior (npm, Playwright, Lighthouse)
 
 ### Bugs da aplicação (encontrados pelos testes)
 
@@ -66,8 +112,8 @@ Metas: Performance ≥ 90, Accessibility ≥ 95, Best Practices ≥ 95, SEO ≥ 
 
 ## O que ainda falta ou não foi verificado
 
-- **Performance mobile do Lighthouse abaixo de 90** (89 e 83), pelos motivos acima.
-- **Fidelidade ao Figma**: comparei lado a lado só a tela de Início com `public/img/ref-inicio.png` (a única exportação de referência do pacote). Estrutura, tipografia, cores, cards e rodapé batem. Diferenças intencionais: a caixa de busca do catálogo (requisito funcional) e o selo "RARO". Detalhe, Carrinho, Pagamento e Conta **não** foram comparados com o Figma por falta de exportações de referência.
+- **Performance mobile do Lighthouse abaixo de 90** (67 no Início e 68 no Detalhe nesta máquina), pelos motivos acima.
+- **Fidelidade ao Figma**: o desktop foi comparado só na tela de Início (`public/img/ref-inicio.png`, a única referência desktop). O mobile foi comparado nas 6 telas enviadas, com diferenças residuais de poucos pixels. As telas sem referência (desktop de Detalhe, Carrinho, Pagamento e Conta; mobile de Perfil, Carteiras, Atividade e Pedido) não foram comparadas.
 - Só Chromium foi testado (sem Firefox/WebKit). As baselines visuais são deste Linux.
 - O deploy (Vercel/Netlify/Cloudflare) não foi executado; só os arquivos de configuração foram mantidos.
 - Avisos do `npm audit` em dependências de desenvolvimento (lighthouse, vite 5/esbuild) não foram tratados, para não trocar versões *major*.

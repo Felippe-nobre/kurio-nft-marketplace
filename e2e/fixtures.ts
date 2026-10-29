@@ -100,7 +100,7 @@ export async function fillCheckoutAndConnect(page: Page) {
   await expect(page.getByRole('heading', { name: 'Perfil do colecionador' })).toBeVisible()
   await expect(page.getByTestId('quote-line').first()).toBeVisible()
   // Pré-preenchido com a carteira principal da Ana (MetaMask/Ethereum).
-  await expect(page.getByLabel('Rede')).toHaveValue('Ethereum')
+  await expect(page.getByRole('combobox', { name: /^Rede/ })).toHaveValue('Ethereum')
   await page.getByRole('button', { name: 'Conectar MetaMask' }).click()
   await expect(page.getByTestId('wallet-connected')).toBeVisible()
 }

@@ -3,6 +3,17 @@ import type { Page } from '@playwright/test'
 
 const names = (page: Page) => page.getByTestId('catalog-grid').getByRole('heading', { level: 3 }).allInnerTexts()
 
+/** No mobile (Figma) a ordenação fica dentro do painel de filtros. */
+async function selectSort(page: Page, value: string) {
+  if (isMobile(page)) {
+    const filters = await openFilters(page)
+    await filters.getByLabel('Ordenar por:').selectOption(value)
+    await page.keyboard.press('Escape')
+    return
+  }
+  await page.getByLabel('Ordenar por:').selectOption(value)
+}
+
 async function openFilters(page: Page) {
   if (isMobile(page)) {
     await page.getByRole('button', { name: /^Filtros/ }).click()
@@ -37,7 +48,7 @@ test.describe('1. Catálogo: busca, filtros, ordenação, paginação e URL', ()
     for (const n of filtered) expect(n).not.toBe('Sage Nomad #009') // Polygon
 
     // Ordenação por menor preço
-    await page.getByLabel('Ordenar por:').selectOption('price_asc')
+    await selectSort(page, 'price_asc')
     await expect(page).toHaveURL(/sort=price_asc/)
     const prices = (await page.getByTestId('catalog-grid').getByTestId('nft-price').allInnerTexts()).map((t) => t.replace(/[^\d.]/g, ''))
     const sorted = [...prices].sort((a, b) => Number(a) - Number(b))
