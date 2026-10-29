@@ -1,6 +1,6 @@
 # Status da entrega
 
-Atualizado em 28/10/2026, na rodada de conclusão contra o briefing original (12 seções). Todo resultado abaixo vem de comandos **executados de fato**; nada foi marcado como atendido só pela existência de uma tela ou de um teste com nome parecido. Ambiente: Linux x64, 2 CPUs, Node 22.23.4, npm 10.9.9, Chromium 153 (Playwright 1.63.0).
+Atualizado em 29/10/2026, após a rodada de performance mobile (seção 10). A rodada anterior (28/10) conferiu o projeto contra o briefing original (12 seções). Todo resultado abaixo vem de comandos **executados de fato**; nada foi marcado como atendido só pela existência de uma tela ou de um teste com nome parecido. Ambiente: Linux x64, 2 CPUs, Node 22.23.4, npm 10.9.9, Chromium 153 (Playwright 1.63.0).
 
 Legenda: ✅ atendido e comprovado · 🔧 corrigido nesta rodada e retestado · ⚠️ não atendido ou não comprovado · 👤 depende de você (publicação)
 
@@ -34,6 +34,7 @@ As 8 baselines visuais passaram **sem ser regeneradas** depois de todas as mudan
 | 5 | 31 vulnerabilidades em dependências de desenvolvimento (11 altas). | `lighthouse` 12 → 13.6.0 e `vite` 5 → 6.4.5 (atualizações direcionadas, sem `--force`); `engines.node` ≥ 22.19. | `npm audit`: 0 |
 | 6 | Requisitos sem teste E2E: limite de quantidade; conflito de chave de idempotência; recusa e desconexão de carteira; expiração durante o checkout; reflow em 320 px. | Testes novos em `e2e/02`, `e2e/07` e `e2e/13`. Os ajustes de reflow em 320 px (rodapé e abas do catálogo) estavam no estado recebido para esta rodada e foram mantidos. | ver matriz |
 | 7 | Performance mobile: o chunk do MSW só começava a baixar depois da execução do JS principal. | `modulepreload` desse chunk no build com mocks (`vite.config.ts`). | Lighthouse mobile: Início 66 → 67, Detalhe 65 → 69 (mesma máquina, antes/depois) |
+| 8 | (29/10) No Início, variantes escondidas por CSS eram montadas: o painel lateral de filtros no mobile (o slider do Radix forçava um layout síncrono de 198 ms com CPU 4×) e o hero da outra largura (com suas artes). A ordenação do mock passava pelo ICU a cada comparação. | Montagem condicional por media query (`useMediaQuery`) e comparação direta de datas ISO. Testadas e revertidas por não terem ganho mensurável: `loader`s de rota, reordenação dos handlers do MSW e `startTransition` na 1ª renderização. | CPU do Início 2.641 → 2.518 ms; Lighthouse Início desktop 96 → 98; mobile dentro do ruído; 66/66 testes, baselines intactas |
 
 ## Matriz de requisitos do briefing
 
@@ -179,19 +180,21 @@ Medianas de 3 execuções por página e perfil (`lighthouse/RESULTS.md`; relató
 
 | Página | Perfil | Performance | Accessibility | Best Practices | SEO | LCP | CLS | TBT |
 |---|---|---|---|---|---|---|---|---|
-| Início | mobile | **68** ⚠️ | 97 ✅ | 100 ✅ | 100 ✅ | 3.887 ms | 0 | 899 ms |
-| Detalhe | mobile | **71** ⚠️ | 97 ✅ | 100 ✅ | 100 ✅ | 3.602 ms | 0 | 835 ms |
-| Início | desktop | 96 ✅ | 100 ✅ | 100 ✅ | 100 ✅ | 1.422 ms | 0 | 43 ms |
-| Detalhe | desktop | 98 ✅ | 97 ✅ | 100 ✅ | 100 ✅ | 1.063 ms | 0 | 7 ms |
+| Início | mobile | **69** ⚠️ | 97 ✅ | 100 ✅ | 100 ✅ | 3.817 ms | 0 | 857 ms |
+| Detalhe | mobile | **69** ⚠️ | 97 ✅ | 100 ✅ | 100 ✅ | 3.542 ms | 0 | 1.012 ms |
+| Início | desktop | 98 ✅ | 100 ✅ | 100 ✅ | 100 ✅ | 1.059 ms | 0 | 21 ms |
+| Detalhe | desktop | 98 ✅ | 97 ✅ | 100 ✅ | 100 ✅ | 1.067 ms | 0 | 5 ms |
+
+Rodada anterior (mesma máquina, mesmo método): Início mobile 68, Detalhe mobile 71, Início desktop 96, Detalhe desktop 98. A diferença no mobile está dentro do ruído entre execuções (±4 pontos); o ganho mensurável foi no Início desktop (LCP 1.422 → 1.059 ms).
 
 | Requisito | Status | Evidência / pendência |
 |---|---|---|
 | Início e detalhe, mobile e desktop, build otimizado, cenário padrão | ✅ | `scripts/lighthouse.mjs` |
 | 3 medições, mediana, configuração versionada, HTML/JSON, versões, ambiente, condições | ✅ | `lighthouse/summary.json` |
 | LCP, CLS e TBT registrados | ✅ | tabela acima |
-| Metas atingidas | ⚠️ | **Performance mobile 68 e 71 (meta 90).** Demais metas atingidas. Causa identificada e otimizações seguras aplicadas: ver abaixo |
+| Metas atingidas | ⚠️ | **Performance mobile 69 e 69 (meta 90).** Demais metas atingidas. Causa identificada e otimizações seguras aplicadas: ver abaixo |
 
-**Por que a Performance mobile não chega a 90.** FCP (0,9 s), Speed Index e CLS têm nota máxima; ficam abaixo TBT (~830–900 ms) e LCP (~3,6–3,9 s). O chunk do MSW e do servidor simulado responde por 47% (Início) e 63% (Detalhe) de todo o tempo de script no perfil mobile (CPU 4× mais lenta) e por 8 a 11 das 18 a 20 tarefas longas: o MSW executa os handlers na thread principal. O elemento de LCP depende da resposta da API simulada, que no cenário padrão tem latência de 150–600 ms. Um perfil de CPU do carregamento não mostrou gargalo único removível no código do app. As alternativas que subiriam a nota (desligar os mocks, reduzir a latência, pré-renderizar dados fixos) mudariam o cenário auditado, o que o briefing não permite. Detalhes em `ARCHITECTURE.md` → Performance.
+**Por que a Performance mobile não chega a 90.** FCP (0,9 s), Speed Index e CLS têm nota máxima; ficam abaixo TBT (~860–1.010 ms) e LCP (~3,5–3,8 s). Para 90 seria preciso, ao mesmo tempo, TBT perto de 200 ms e LCP perto de 3 s. O chunk do MSW e do servidor simulado responde por 54% (Início) e 62% (Detalhe) de todo o tempo de script no perfil mobile (CPU 4× mais lenta) e por 8 a 11 das 17 a 20 tarefas longas: o MSW executa os handlers na thread principal, com custo por handler (cookies e compilação de rotas) a cada requisição. O elemento de LCP depende da resposta da API simulada, que no cenário padrão tem latência de 150–600 ms. Um perfil de CPU do carregamento não mostrou gargalo único removível no código do app. As alternativas que subiriam a nota (desligar os mocks, reduzir a latência, pré-renderizar dados fixos) mudariam o cenário auditado, o que o briefing não permite. Detalhes em `ARCHITECTURE.md` → Performance.
 
 ### 11. Critérios eliminatórios
 
@@ -225,7 +228,7 @@ Medianas de 3 execuções por página e perfil (`lighthouse/RESULTS.md`; relató
 
 ## Pendências restantes
 
-- **Performance mobile do Lighthouse abaixo de 90** (68 e 71), com causa documentada.
+- **Performance mobile do Lighthouse abaixo de 90** (69 e 69), com causa documentada e as otimizações seguras já aplicadas.
 - **Deploy e URL pública** ainda não existem (etapa sua).
 - Comparação pixel a pixel com o Figma só onde há referência (Início desktop e 6 telas mobile).
 - Testes apenas em Chromium; baselines visuais geradas em Linux (em outro SO, rode `npm run test:e2e:update` uma vez).

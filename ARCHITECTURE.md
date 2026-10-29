@@ -190,12 +190,19 @@ O que já foi feito:
 - Build com chunks separados (React, TanStack, rotas sob demanda), artes em WebP, `preload` com `fetchpriority="high"` da arte do hero, imagens com `width`/`height`, `loading="lazy"` abaixo da dobra.
 - `modulepreload` do chunk de mocks no HTML do build com MSW (plugin em `vite.config.ts`): o download deixa de esperar a execução do JS principal. Mobile, Lighthouse 13: Início 66 → 67 e Detalhe 65 → 69 (LCP −220 ms e −400 ms).
 - Esqueletos com as mesmas dimensões do conteúdo: CLS 0 em todas as medições (o do detalhe desktop era 0,083).
+- Variantes escondidas por CSS deixaram de ser montadas (`src/lib/useMediaQuery.ts`, lido de forma síncrona na 1ª renderização): o painel lateral de filtros só existe a partir de 1024 px, o que elimina o layout forçado do slider do Radix (`useSize`, 198 ms de CPU com 4× no carregamento do Início); o hero desktop e o hero/busca mobile só são montados na própria largura, sem DOM nem artes ocultas.
+- Ordenação do catálogo no servidor simulado sem ICU: datas ISO e ids comparados diretamente; nomes com um `Intl.Collator` reutilizado (mesma ordem de antes).
+- Efeito medido: perfil de CPU do Início (4×) 2.641 → 2.518 ms; Lighthouse Início desktop 96 → 98 (LCP 1.422 → 1.059 ms). No mobile, a variação ficou dentro do ruído entre execuções (±4 pontos).
 
 Causa identificada do resultado mobile (evidências nos relatórios JSON de `lighthouse/reports/`):
 - FCP (0,9 s), Speed Index e CLS têm nota máxima. As métricas abaixo da meta são **TBT** (~830–900 ms) e **LCP** (~3,6–3,9 s).
 - O chunk do MSW e do servidor simulado (`browser-*.js`) responde por 47% (Início) e 63% (Detalhe) de todo o tempo de script no perfil mobile (CPU 4× mais lenta), e por 8 a 11 das 18 a 20 tarefas longas. O MSW executa os handlers na thread principal da página, e cada requisição simulada passa pelo casamento de rotas, pela latência simulada e pelas regras do servidor.
 - O elemento de LCP é uma arte que depende da resposta da API simulada (catálogo no Início, detalhe no NFT), que no cenário padrão tem latência de 150–600 ms.
-- Um perfil de CPU do carregamento não mostrou um gargalo único removível no código do app: o custo se divide entre a renderização do React, o MSW e o layout inicial.
+- Perfil de CPU por ponto de entrada (Início, CPU 4×, média de 3; build com sourcemaps): renderização do React ~480 ms (agendador + `react-dom`), avaliação dos módulos no carregamento ~300 ms, tratamento das requisições pelo MSW ~240 ms (`executeHandlers` + listener do Service Worker). Dentro do MSW o custo é por handler e por requisição: leitura de cookies (`tough-cookie`) e compilação do padrão de rota (`path-to-regexp`) para cada handler percorrido.
+- O chunk de mocks tem 330 KiB; 116 KiB dele são a tabela de sufixos públicos do `tldts`, dependência do `tough-cookie` que o MSW usa para cookies (este app não usa cookies). O MSW 2.15 (última 2.x) e o 3.x mantêm essa dependência.
+- Não há um gargalo único removível no código do app: o custo se divide entre a renderização do React, o MSW e o layout inicial.
+
+Tentativas sem ganho mensurável, revertidas (rodada de 29/10/2026): `loader`s de rota que antecipavam as consultas ("render-as-you-fetch"); handlers mais usados no início da lista do MSW; 1ª renderização dentro de `startTransition` (as atualizações do roteador e do TanStack Query são síncronas via `useSyncExternalStore`, então as tarefas longas do React não diminuíram). Avaliada e não aplicada: substituir o `tldts` por um *shim* (cerca de 40 KB comprimidos, estimativa de 1–2 pontos), por exigir alterar uma dependência interna do MSW.
 
 Por que não foi "corrigido" de outra forma: as alternativas que melhorariam a nota (desligar os mocks, reduzir a latência, pré-renderizar dados fixos ou pré-carregar artes que dependem da API) mudariam o cenário auditado ou simplificariam a entrega só para a pontuação, o que o briefing não permite. Com uma API real (`VITE_ENABLE_MOCKS=false`) esse código não é carregado, mas não há backend real para medir.
 

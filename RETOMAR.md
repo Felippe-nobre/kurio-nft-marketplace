@@ -13,6 +13,7 @@ Estado: **concluído para entrega**, faltando apenas a publicação (etapa do re
 | `9944cca` | `modulepreload` do chunk de mocks; filtros de diagnóstico do Lighthouse |
 | `e87c980` | esqueleto do detalhe com as alturas reais (CLS 0) |
 | `064f68a` · `2b7ef2d` | documentação, Lighthouse oficial, testes de limite de quantidade e de idempotência |
+| `a6d8874` | performance do Início: variantes escondidas por CSS não são mais montadas; ordenação do mock sem ICU (rodada de 29/10; tentativas sem ganho foram revertidas, ver ARCHITECTURE → Performance) |
 
 ## Próximos passos
 
