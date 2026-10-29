@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.19"
   },
   "scripts": {
     "dev": "vite",
@@ -18,7 +18,8 @@
     "test:e2e:report": "playwright show-report",
     "lighthouse": "node scripts/lighthouse.mjs",
     "check": "npm run typecheck && npm run lint && npm run build:demo && npm run test:e2e",
-    "postinstall": "msw init public --save"
+    "postinstall": "msw init public --save",
+    "check:routes": "node scripts/check-routes.cjs"
   },
   "msw": {
     "workerDirectory": [
@@ -56,10 +57,10 @@
     "eslint": "^9.13.0",
     "eslint-plugin-react-hooks": "^5.0.0",
     "globals": "^15.11.0",
-    "lighthouse": "^12.2.0",
+    "lighthouse": "^13.6.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.2",
     "typescript-eslint": "^8.11.0",
-    "vite": "^5.4.8"
+    "vite": "^6.4.5"
   }
 }
